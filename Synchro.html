@@ -1,0 +1,2060 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Synchronous | Complete Realtime Collaboration Platform</title>
+    
+    <!-- Google Fonts & Icon Libraries -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- QR Code Generation Utility -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --error: #ef4444;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --sidebar-width: 320px;
+            --border: #e2e8f0;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg); color: var(--text-main); line-height: 1.5; overflow-x: hidden; }
+
+        .hidden { display: none !important; }
+        
+        /* Form Components */
+        .btn { cursor: pointer; padding: 12px 24px; border-radius: 8px; border: none; font-weight: 600; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.95rem; }
+        .btn-primary { background: var(--primary); color: white; width: 100%; }
+        .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15); }
+        .btn-secondary { background: #f1f5f9; color: var(--text-main); border: 1px solid var(--border); width: 100%; }
+        .btn-secondary:hover { background: #e2e8f0; }
+        .btn-danger { background: #fee2e2; color: #b91c1c; }
+        .btn-danger:hover { background: #fca5a5; }
+        .btn:active { transform: scale(0.98); }
+        .btn:disabled { background: #cbd5e1; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        input, textarea, select { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; transition: all 0.2s; background: #fff; color: var(--text-main); font-size: 0.95rem; }
+        input:focus, textarea:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+        label { display: block; margin-bottom: 6px; font-weight: 500; color: var(--text-main); font-size: 0.875rem; }
+        .input-group { margin-bottom: 18px; }
+
+        /* Custom Experimental Warning/Disclaimer Box */
+        .experimental-disclaimer { background-color: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 12px; margin: 16px 0; color: #b45309; font-size: 0.8rem; text-align: center; font-weight: 500; display: flex; flex-direction: column; gap: 4px; align-items: center; }
+
+        /* Toasts Layout */
+        #toast-container { position: fixed; top: 24px; right: 24px; z-index: 10000; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+        .toast { background: white; color: var(--text-main); padding: 16px 20px; border-radius: 12px; box-shadow: 0 10px 25px rgba(15, 23, 42, 0.1); display: flex; align-items: center; gap: 12px; min-width: 320px; max-width: 450px; pointer-events: auto; border-left: 4px solid var(--primary); animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .toast.success { border-left-color: var(--success); }
+        .toast.error { border-left-color: var(--error); }
+        .toast.mention { border-left-color: var(--warning); background: #fffbeb; }
+
+        /* Main Workspace Wrapper Grid */
+        #app-layout { display: flex; width: 100vw; height: 100vh; overflow: hidden; }
+        
+        /* Left Navigation Sidebar Component */
+        .sidebar { width: var(--sidebar-width); height: 100%; background: #ffffff; border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; z-index: 900; transition: transform 0.3s ease; }
+        .sidebar-header { padding: 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+        .sidebar-brand { font-size: 1.25rem; font-weight: 800; color: var(--primary); letter-spacing: -0.5px; display: flex; align-items: center; gap: 8px; }
+        .sidebar-actions { padding: 16px; display: flex; flex-direction: column; gap: 10px; border-bottom: 1px solid var(--border); }
+        .workspace-list-container { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 6px; }
+        
+        .workspace-item-btn { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: none; background: transparent; text-align: left; width: 100%; }
+        .workspace-item-btn:hover { background: #f1f5f9; }
+        .workspace-item-btn.active { background: rgba(37, 99, 235, 0.08); color: var(--primary); font-weight: 600; }
+        .workspace-item-icon { width: 36px; height: 36px; border-radius: 8px; background: #e2e8f0; object-fit: cover; display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--text-muted); flex-shrink: 0; }
+        .workspace-item-info { flex: 1; min-width: 0; }
+        .workspace-item-name { font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        .sidebar-footer { padding: 16px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 12px; background: #fafafa; }
+        .user-footer-avatar { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; background: #cbd5e1; }
+        .user-footer-details { flex: 1; min-width: 0; }
+        .user-footer-name { font-size: 0.875rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .user-footer-role { font-size: 0.75rem; color: var(--text-muted); }
+
+        /* Main App Area Layout Container */
+        .main-workspace-content { flex: 1; height: 100%; display: flex; flex-direction: column; background: #f8fafc; overflow: hidden; position: relative; }
+        .workspace-view-header { height: 64px; background: #ffffff; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 24px; flex-shrink: 0; }
+        .workspace-title-area { display: flex; align-items: center; gap: 12px; min-width: 0; }
+        .active-workspace-icon { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; }
+        .active-workspace-meta h2 { font-size: 1.1rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .active-workspace-meta p { font-size: 0.75rem; color: var(--text-muted); }
+        .workspace-nav-tabs { display: flex; background: #f1f5f9; padding: 4px; border-radius: 8px; gap: 4px; margin-left: 20px; }
+        .tab-btn { background: transparent; border: none; padding: 6px 14px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.15s; }
+        .tab-btn.active { background: #ffffff; color: var(--text-main); box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+
+        /* Workspace Tab Panes Frame */
+        .pane-container { flex: 1; width: 100%; overflow: hidden; position: relative; display: flex; }
+        .tab-pane { width: 100%; height: 100%; display: flex; position: absolute; inset: 0; opacity: 0; pointer-events: none; transition: opacity 0.2s ease; background: #f8fafc; }
+        .tab-pane.active { opacity: 1; pointer-events: auto; z-index: 10; }
+
+        /* Chat Dashboard View Architecture */
+        .chat-pane-layout { display: flex; flex-content: row; width: 100%; height: 100%; }
+        .chat-main-stream { flex: 1; display: flex; flex-direction: column; height: 100%; background: #ffffff; position: relative; }
+        .chat-messages-scroll { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+        
+        .chat-bubble-wrapper { display: flex; gap: 12px; max-width: 85%; animation: fadeIn 0.25s ease forwards; }
+        .chat-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: #e2e8f0; flex-shrink: 0; }
+        .chat-bubble-content { display: flex; flex-direction: column; gap: 4px; }
+        .chat-sender-header { display: flex; align-items: baseline; gap: 8px; }
+        .chat-sender-name { font-size: 0.875rem; font-weight: 700; color: var(--text-main); }
+        .chat-message-time { font-size: 0.75rem; color: var(--text-muted); }
+        .chat-text-payload { background: #f1f5f9; padding: 12px 16px; border-radius: 0 14px 14px 14px; color: var(--text-main); font-size: 0.925rem; word-break: break-word; line-height: 1.4; }
+        .chat-text-payload .mention-tag { background: #dbeafe; color: #1e40af; font-weight: 600; padding: 2px 6px; border-radius: 4px; display: inline-block; }
+        
+        /* Media Attachments Containers */
+        .chat-media-attachment { margin-top: 6px; max-width: 320px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); background: #fafafa; }
+        .chat-image-file { width: 100%; max-height: 240px; object-fit: cover; cursor: pointer; display: block; }
+        .chat-video-file { width: 100%; max-height: 240px; display: block; outline: none; }
+        .chat-audio-player { margin-top: 4px; display: block; width: 260px; max-width: 100%; }
+        .chat-generic-file-box { display: flex; align-items: center; gap: 12px; padding: 12px; background: #fafafa; border-radius: 8px; text-decoration: none; color: inherit; border: 1px solid var(--border); margin-top: 4px; }
+        .chat-generic-file-icon { font-size: 1.5rem; color: var(--primary); }
+
+        /* Interactive Live Mention Autocomplete Utility Dropdown */
+        .mention-autocomplete-box { position: absolute; bottom: 84px; left: 24px; right: 24px; background: #ffffff; border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 -10px 25px rgba(0,0,0,0.08); max-height: 200px; overflow-y: auto; z-index: 1000; display: flex; flex-direction: column; padding: 6px; }
+        .mention-user-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 6px; cursor: pointer; transition: background 0.15s; }
+        .mention-user-row:hover { background: #f1f5f9; }
+
+        /* Integrated Action Control Bar Layout */
+        .chat-input-container { padding: 16px 24px; background: #ffffff; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; position: relative; }
+        .chat-input-row { display: flex; align-items: center; gap: 12px; }
+        .chat-input-field { flex: 1; min-width: 0; padding: 12px 16px; border: 1px solid var(--border); border-radius: 24px; background: #f8fafc; resize: none; font-size: 0.95rem; }
+        .chat-control-buttons { display: flex; align-items: center; gap: 8px; }
+        .control-icon-btn { width: 40px; height: 40px; border-radius: 50%; background: #f1f5f9; border: none; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; transition: all 0.2s; position: relative; }
+        .control-icon-btn:hover { background: #e2e8f0; color: var(--text-main); }
+        .control-icon-btn.recording { background: var(--error); color: white; animation: blink 1s infinite; }
+        .control-icon-btn input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+        .send-chat-btn { width: 40px; height: 40px; border-radius: 50%; background: var(--primary); color: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.05rem; transition: background 0.2s; }
+        .send-chat-btn:hover { background: var(--primary-hover); }
+
+        /* Whiteboard Workspace Architectural Space */
+        .whiteboard-pane-layout { display: flex; flex-direction: column; width: 100%; height: 100%; padding: 20px; gap: 16px; }
+        .whiteboard-toolbar { height: 56px; background: #ffffff; border: 1px solid var(--border); border-radius: 12px; padding: 0 16px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .whiteboard-controls-cluster { display: flex; align-items: center; gap: 12px; }
+        .whiteboard-meta-feedback { font-size: 0.8rem; color: var(--text-muted); text-align: right; }
+        .whiteboard-canvas-holder { flex: 1; background: #ffffff; border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); position: relative; overflow: hidden; }
+        #collab-canvas { width: 100%; height: 100%; display: block; cursor: crosshair; }
+        .color-swatch-picker { width: 28px; height: 28px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; transition: transform 0.15s; }
+        .color-swatch-picker.active { border-color: var(--text-main); transform: scale(1.1); }
+
+        /* Realtime Textbox Grid Dashboard Elements */
+        .textboxes-pane-layout { width: 100%; height: 100%; display: flex; flex-direction: column; padding: 24px; gap: 20px; overflow-y: auto; }
+        .textboxes-dash-header { display: flex; align-items: center; justify-content: space-between; }
+        .textboxes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+        .textbox-card { background: #ffffff; border: 1px solid var(--border); border-radius: 12px; padding: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.01); display: flex; flex-direction: column; gap: 12px; position: relative; transition: box-shadow 0.2s; }
+        .textbox-card.important-board { border-left: 4px solid var(--warning); background: #fffdf5; }
+        .textbox-card-header { display: flex; align-items: center; justify-content: space-between; }
+        .textbox-textarea { border: 1px solid var(--border); border-radius: 6px; padding: 10px; font-size: 0.9rem; resize: none; min-height: 110px; width: 100%; position: relative; }
+        .textbox-cursor-tracking-tag { font-size: 0.725rem; padding: 2px 6px; border-radius: 4px; background: var(--primary); color: white; margin-top: 4px; display: inline-block; align-self: flex-start; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0; transition: opacity 0.2s; }
+        .textbox-cursor-tracking-tag.active-editing { opacity: 1; }
+
+        /* Members Dictionary Architecture */
+        .members-pane-layout { display: flex; width: 100%; height: 100%; }
+        .members-main-section { flex: 1; display: flex; flex-direction: column; height: 100%; background: #ffffff; border-right: 1px solid var(--border); }
+        .members-search-header { padding: 20px; border-bottom: 1px solid var(--border); display: flex; gap: 12px; }
+        .members-scroll-area { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+        
+        .member-dict-row { display: flex; align-items: center; justify-content: space-between; padding: 12px; border: 1px solid var(--border); border-radius: 10px; transition: background 0.15s; }
+        .member-dict-row:hover { background: #f8fafc; }
+        .member-info-block { display: flex; align-items: center; gap: 12px; min-width: 0; }
+        .member-avatar-img { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; background: #cbd5e1; flex-shrink: 0; }
+        .member-identity-meta { min-width: 0; }
+        .member-name-line { font-size: 0.925rem; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+        .custom-member-badge { font-size: 0.725rem; background: #e2e8f0; color: var(--text-main); padding: 2px 8px; border-radius: 12px; font-weight: 500; display: inline-block; max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .member-uid-line { font-size: 0.75rem; color: var(--text-muted); font-family: monospace; }
+        .member-action-block { display: flex; align-items: center; gap: 8px; }
+
+        /* Configuration Panels & Pending System Section */
+        .config-sidebar-pane { width: 340px; height: 100%; background: #fafafa; display: flex; flex-direction: column; flex-shrink: 0; border-left: 1px solid var(--border); }
+        .config-pane-header { padding: 20px; border-bottom: 1px solid var(--border); font-weight: 700; font-size: 1rem; background: #ffffff; }
+        .config-scroll-body { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 24px; }
+        .pending-requests-section { display: flex; flex-direction: column; gap: 10px; flex: 1; min-height: 200px; max-height: 350px; overflow-y: auto; padding-right: 4px; border: 1px dashed var(--border); padding: 10px; border-radius: 8px; background: #ffffff; }
+        .pending-request-card { background: #ffffff; border: 1px solid var(--border); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px; font-size: 0.85rem; box-shadow: 0 2px 4px rgba(0,0,0,0.01); }
+
+        /* Global Modal & Block Drawers Overlay Design */
+        .modal-overlay-shroud { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 5000; display: flex; align-items: center; justify-content: center; padding: 20px; animation: fadeIn 0.2s ease forwards; }
+        .modal-container-window { background: #ffffff; border-radius: 16px; width: 100%; max-width: 480px; box-shadow: 0 20px 50px rgba(0,0,0,0.15); display: flex; flex-direction: column; overflow: hidden; animation: bounceIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.15) forwards; }
+        .modal-view-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+        .modal-view-body { padding: 24px; overflow-y: auto; max-height: 75vh; }
+        .modal-view-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; gap: 12px; justify-content: flex-end; background: #f8fafc; }
+
+        /* Drawer Overlay Architecture */
+        .drawer-overlay-shroud { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(6px); z-index: 4000; display: flex; align-items: center; justify-content: center; }
+        .drawer-surface-pod { background: #ffffff; width: 100%; max-width: 450px; border-radius: 20px; padding: 32px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); border: 1px solid var(--border); text-align: center; }
+
+        /* Share Options Modals Grid Layout */
+        .invite-channels-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+        .invite-channel-card { border: 1px solid var(--border); border-radius: 8px; padding: 12px 8px; text-align: center; cursor: pointer; background: #f8fafc; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 0.8rem; font-weight: 500; }
+        .invite-channel-card:hover { background: rgba(37, 99, 235, 0.05); border-color: var(--primary); color: var(--primary); }
+        .qr-display-node { display: flex; justify-content: center; margin: 16px 0; padding: 12px; background: white; border: 1px solid var(--border); border-radius: 8px; min-height: 150px; align-items: center; }
+
+        /* Login & Authentication Containers Space */
+        .auth-canvas-wrapper { display: flex; min-height: 100vh; align-items: center; justify-content: center; background: #f1f5f9; padding: 20px; }
+        .auth-card-shield { background: #ffffff; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.04); padding: 40px; width: 100%; max-width: 420px; animation: fadeIn 0.4s ease forwards; }
+
+        /* Keyframes Animations definitions */
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideInRight { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes bounceIn {
+            0% { transform: scale(0.9); opacity: 0; }
+            50% { transform: scale(1.02); opacity: 1; }
+            100% { transform: scale(1); }
+        }
+        @keyframes blink { 50% { opacity: 0.5; } }
+
+        .fade-in { animation: fadeIn 0.3s ease-out forwards; }
+    </style>
+</head>
+<body>
+
+    <!-- Unified Realtime Toast Notifications Mechanism -->
+    <div id="toast-container"></div>
+
+    <!-- MAIN LOGIN & IDENTITY DOM SECTION -->
+    <div id="auth-section" class="auth-canvas-wrapper fade-in">
+        <div class="auth-card-shield">
+            <h2 id="auth-title" style="text-align: center; font-size: 1.75rem; font-weight: 800; margin-bottom: 6px; letter-spacing: -0.5px;">Welcome Back!</h2>
+            <p id="auth-subtitle" style="text-align: center; color: var(--text-muted); font-size: 0.875rem; margin-bottom: 24px;">Login to synchronize your active workspaces</p>
+            
+            <div class="input-group">
+                <label>Email Address</label>
+                <input type="email" id="auth-email" placeholder="you@example.com">
+            </div>
+            <div class="input-group">
+                <label>Password</label>
+                <input type="password" id="auth-password" placeholder="••••••••">
+            </div>
+
+            <button id="auth-submit-btn" class="btn btn-primary" onclick="processEmailPasswordAuth()" style="margin-top: 6px;">Sign In</button>
+
+            <!-- Experimental Disclaimer Box Feature -->
+            <div class="experimental-disclaimer">
+                <span><i class="fas fa-flask"></i> Email and password login or signup is completely experimental, if you want stability and speed. Use Google authentication</span>
+            </div>
+
+            <button class="btn btn-secondary" onclick="triggerGoogleAuthentication()" style="margin-bottom: 14px;">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="G" style="width: 16px; height: 16px;"> Continue with Google
+            </button>
+
+            <div style="text-align: center; margin-bottom: 20px;">
+                <button id="forgot-password-trigger" class="btn" onclick="triggerPasswordResetRecovery()" style="background: transparent; color: var(--text-muted); font-size: 0.85rem; padding: 4px; font-weight: 500;">Forgot Password?</button>
+            </div>
+
+            <hr style="opacity: 0.1; margin-bottom: 20px;">
+
+            <button id="auth-toggle-view-btn" class="btn btn-secondary" onclick="toggleAuthLayoutMode()" style="font-size: 0.85rem; padding: 10px; color: var(--primary); background: rgba(37, 99, 235, 0.04); border-color: transparent;">
+                New to the app? What are you even waiting for? Sign up now!
+            </button>
+        </div>
+    </div>
+
+    <!-- MANDATORY "COMPLETE YOUR PROFILE" DRAWER LAYER OVERLAY -->
+    <div id="mandatory-profile-drawer" class="drawer-overlay-shroud hidden">
+        <div class="drawer-surface-pod">
+            <i class="fas fa-user-circle" style="font-size: 3.5rem; color: var(--primary); margin-bottom: 16px;"></i>
+            <h2 style="font-weight: 800; font-size: 1.5rem; margin-bottom: 8px;">Complete your profile</h2>
+            <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 24px;">Before participating in any synchronous project, setup your profile details. This panel cannot be skipped.</p>
+            
+            <div class="input-group" style="text-align: left;">
+                <label>Display Name <span style="color: var(--error);">*</span></label>
+                <input type="text" id="profile-display-name" placeholder="Alex Mercer">
+            </div>
+
+            <div class="input-group" style="text-align: left;">
+                <label>Profile Picture Option</label>
+                <select id="profile-avatar-select" onchange="previewAvatarChoice()">
+                    <option value="https://api.dicebear.com/7.x/bottts/svg?seed=Synchronous1">Robo-Tech Alpha</option>
+                    <option value="https://api.dicebear.com/7.x/avataaars/svg?seed=Synchronous2">Professional Style A</option>
+                    <option value="https://api.dicebear.com/7.x/avataaars/svg?seed=Synchronous3">Professional Style B</option>
+                    <option value="https://api.dicebear.com/7.x/identicon/svg?seed=Synchronous4">Geometric Pattern</option>
+                </select>
+                <div style="display: flex; justify-content: center; margin-top: 14px;">
+                    <img id="profile-avatar-preview" src="https://api.dicebear.com/7.x/bottts/svg?seed=Synchronous1" alt="Avatar" style="width: 70px; height: 70px; border-radius: 50%; border: 2px solid var(--border); background: #f8fafc; padding: 4px;">
+                </div>
+            </div>
+
+            <div class="input-group" style="text-align: left;">
+                <label>Description</label>
+                <textarea id="profile-description" rows="3" placeholder="Tell the workspace members about your specialty..."></textarea>
+            </div>
+
+            <button class="btn btn-primary" onclick="saveMandatoryProfileData()" style="margin-top: 8px;">
+                <i class="fas fa-save"></i> Save Profile & Enter App
+            </button>
+        </div>
+    </div>
+
+    <!-- MAIN COLLABORATIVE DESKTOP ENVIRONMENT PLATFORM (SECURED) -->
+    <div id="secured-app-workspace" class="hidden">
+        <div id="app-layout">
+            
+            <!-- LEFT NAVIGATION CORE SIDEBAR -->
+            <div class="sidebar">
+                <div class="sidebar-header">
+                    <div class="sidebar-brand"><i class="fas fa-sync-alt"></i> Synchronous</div>
+                </div>
+
+                <div class="sidebar-actions">
+                    <button class="btn btn-primary" onclick="openCreateWorkspaceModal()"><i class="fas fa-plus-circle"></i> Create workspace</button>
+                    <button class="btn btn-secondary" onclick="openJoinWorkspaceModal()"><i class="fas fa-sign-in-alt"></i> Join workspace</button>
+                </div>
+
+                <!-- Dynamic Reactive Workspaces Node Tree -->
+                <div class="workspace-list-container" id="sidebar-workspaces-node-pool">
+                    <!-- Injected at Runtime -->
+                </div>
+
+                <div class="sidebar-footer">
+                    <img id="footer-user-avatar" src="" alt="Avatar" class="user-footer-avatar">
+                    <div class="user-footer-details">
+                        <div id="footer-user-displayname" class="user-footer-name">Loading...</div>
+                        <div class="user-footer-role">Synchronous Member</div>
+                    </div>
+                    <button class="control-icon-btn" onclick="executePlatformLogoutSystem()" title="Logout Session" style="background: transparent; color: var(--error);"><i class="fas fa-power-off"></i></button>
+                </div>
+            </div>
+
+            <!-- MAIN OPERATIONAL VIEW FRAME SPACE -->
+            <div class="main-workspace-content">
+                
+                <!-- IDLE VIEW (NO ACTIVE WORKSPACE STATE) -->
+                <div id="workspace-idle-state" class="fade-in" style="display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; text-align: center; padding: 40px;">
+                    <i class="fas fa-cubes" style="font-size: 4.5rem; color: #cbd5e1; margin-bottom: 20px;"></i>
+                    <h2 style="font-weight: 700; color: var(--text-main);">No workspace selected</h2>
+                    <p style="color: var(--text-muted); font-size: 0.95rem; max-width: 400px; margin-top: 6px;">Create a brand new secure collaboration instance or join one via an invitation code from your sidebar controls.</p>
+                </div>
+
+                <!-- ACTIVE WORKING PANELS INTERFACE FRAME -->
+                <div id="workspace-active-state" class="hidden" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
+                    
+                    <!-- TOP DESKTOP SYSTEM HEADER -->
+                    <div class="workspace-view-header">
+                        <div class="workspace-title-area">
+                            <img id="active-ws-header-icon" src="" alt="Workspace Icon" class="active-workspace-icon">
+                            <div class="active-workspace-meta">
+                                <h2 id="active-ws-header-title">Workspace Title</h2>
+                                <p id="active-ws-header-code-pill">Code: ------</p>
+                            </div>
+                            
+                            <!-- Application Module Control Tabs -->
+                            <div class="workspace-nav-tabs">
+                                <button id="tab-trigger-chat" class="tab-btn active" onclick="switchActiveWorkspaceModuleView('chat')"><i class="fas fa-comments"></i> Chat</button>
+                                <button id="tab-trigger-whiteboard" class="tab-btn" onclick="switchActiveWorkspaceModuleView('whiteboard')"><i class="fas fa-paint-brush"></i> Whiteboard</button>
+                                <button id="tab-trigger-textboxes" class="tab-btn" onclick="switchActiveWorkspaceModuleView('textboxes')"><i class="fas fa-th-large"></i> Shared Textboxes</button>
+                                <button id="tab-trigger-members" class="tab-btn" onclick="switchActiveWorkspaceModuleView('members')"><i class="fas fa-users"></i> Directory</button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <button class="btn btn-secondary" onclick="triggerInviteManagerConsole()" style="padding: 8px 14px; font-size: 0.85rem;"><i class="fas fa-user-plus"></i> Invite</button>
+                        </div>
+                    </div>
+
+                    <!-- MODULE PANES GRAPHICAL SLOTS -->
+                    <div class="pane-container">
+                        
+                        <!-- MODULE 1: CHAT COMPONENT ENGINE -->
+                        <div id="pane-module-slot-chat" class="tab-pane active">
+                            <div class="chat-pane-layout">
+                                <div class="chat-main-stream">
+                                    <div class="chat-messages-scroll" id="chat-messages-rendering-stream">
+                                        <!-- Realtime Message Feeds -->
+                                    </div>
+
+                                    <!-- Mention Dropdown Menu Component Grid -->
+                                    <div id="chat-mention-autocomplete-menu" class="mention-autocomplete-box hidden"></div>
+
+                                    <!-- Shared Typing & Controller Bar Layout -->
+                                    <div class="chat-input-container">
+                                        <div class="chat-input-row">
+                                            <input type="text" id="chat-message-input-element" class="chat-input-field" placeholder="Type a secure message... Use @ to mention team members" onkeyup="evaluateChatInputFieldForMentions(event)">
+                                            
+                                            <div class="chat-control-buttons">
+                                                <!-- Native Device Camera Capturing Node Toggle -->
+                                                <button class="control-icon-btn" title="Capture via Camera" onclick="triggerDeviceCameraCapturePipeline()"><i class="fas fa-camera"></i></button>
+                                                
+                                                <!-- Media Attachment File Systems Trigger Component -->
+                                                <button class="control-icon-btn" title="Share Media File">
+                                                    <i class="fas fa-paperclip"></i>
+                                                    <input type="file" id="chat-binary-attachment-input" accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.zip" onchange="processMediaAttachmentSelection(this)">
+                                                </button>
+                                                
+                                                <!-- Voice Streaming Dictation Recorder System -->
+                                                <button id="chat-voice-recorder-btn" class="control-icon-btn" title="Record Audio Note (Max 8 mins)" onclick="toggleVoiceAudioMessageRecording()"><i class="fas fa-microphone"></i></button>
+                                                
+                                                <button class="send-chat-btn" onclick="dispatchChatMessageToServer()"><i class="fas fa-paper-plane"></i></button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- MODULE 2: COLLABORATIVE WHITEBOARD ENGINE -->
+                        <div id="pane-module-slot-whiteboard" class="tab-pane">
+                            <div class="whiteboard-pane-layout">
+                                <div class="whiteboard-toolbar">
+                                    <div class="whiteboard-controls-cluster">
+                                        <div style="display: flex; gap: 6px; align-items: center; border-right: 1px solid var(--border); padding-right: 14px;">
+                                            <div class="color-swatch-picker active" style="background: #1e293b;" onclick="updateWhiteboardBrushColor('#1e293b', this)"></div>
+                                            <div class="color-swatch-picker" style="background: #ef4444;" onclick="updateWhiteboardBrushColor('#ef4444', this)"></div>
+                                            <div class="color-swatch-picker" style="background: #2563eb;" onclick="updateWhiteboardBrushColor('#2563eb', this)"></div>
+                                            <div class="color-swatch-picker" style="background: #10b981;" onclick="updateWhiteboardBrushColor('#10b981', this)"></div>
+                                            <div class="color-swatch-picker" style="background: #f59e0b;" onclick="updateWhiteboardBrushColor('#f59e0b', this)"></div>
+                                        </div>
+                                        <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.8rem; width: auto;" onclick="clearWhiteboardCanvasEngine()"><i class="fas fa-eraser"></i> Clear All Canvas</button>
+                                    </div>
+                                    <div class="whiteboard-meta-feedback">
+                                        <div id="whiteboard-active-drawer-status" style="font-weight: 600; color: var(--primary);">Active Drawer: None</div>
+                                        <div id="whiteboard-last-edited-by-status" style="font-size: 0.725rem;">Last edited by: N/A</div>
+                                    </div>
+                                </div>
+                                <div class="whiteboard-canvas-holder">
+                                    <canvas id="collab-canvas"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- MODULE 3: REALTIME SHARED TEXTBOX ARCHITECTURE -->
+                        <div id="pane-module-slot-textboxes" class="tab-pane">
+                            <div class="textboxes-pane-layout">
+                                <div class="textboxes-dash-header">
+                                    <div>
+                                        <h3 style="font-weight: 700;">Workspace Dynamic Textboxes</h3>
+                                        <p style="font-size: 0.75rem; color: var(--text-muted);">Real-time text block streaming synchronization pool (Max 20 per instance)</p>
+                                    </div>
+                                    <button class="btn btn-primary" style="width: auto;" onclick="createNewSharedTextboxInstance()"><i class="fas fa-plus"></i> Spawn Textbox</button>
+                                </div>
+                                <div class="textboxes-grid" id="shared-textboxes-rendering-grid">
+                                    <!-- Injected at Runtime -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- MODULE 4: MEMBER DICTIONARY & CONFIGURATION SYSTEM -->
+                        <div id="pane-module-slot-members" class="tab-pane">
+                            <div class="members-pane-layout">
+                                <div class="members-main-section">
+                                    <div class="members-search-header">
+                                        <input type="text" id="member-dictionary-search-input" placeholder="Search members by display name or unique UID profile markers..." oninput="filterWorkspaceMembersDictionaryList()">
+                                    </div>
+                                    <div class="members-scroll-area" id="members-dictionary-scroller-node">
+                                        <!-- Members List injected reactively -->
+                                    </div>
+                                </div>
+                                
+                                <!-- SIDE PRESET PANELS CONTAINER (ADMIN RIGHTS CONSOLE & PENDING POOL) -->
+                                <div class="config-sidebar-pane">
+                                    <div class="config-pane-header"><i class="fas fa-cogs"></i> Workspace Control Center</div>
+                                    <div class="config-scroll-body">
+                                        
+                                        <!-- ADMIN INTERFACE CAPABILITY CONTAINER BLOCK -->
+                                        <div id="admin-only-configuration-controls" class="hidden" style="display: flex; flex-direction: column; gap: 16px;">
+                                            <h4 style="font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted);">Configure workspace</h4>
+                                            
+                                            <div class="input-group">
+                                                <label>Workspace Title Name</label>
+                                                <input type="text" id="config-ws-input-name">
+                                            </div>
+                                            <div class="input-group">
+                                                <label>Description Details</label>
+                                                <textarea id="config-ws-input-description" rows="2"></textarea>
+                                            </div>
+                                            <div class="input-group">
+                                                <label>Workspace Icon (URL)</label>
+                                                <input type="text" id="config-ws-input-icon">
+                                            </div>
+
+                                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                                                <input type="checkbox" id="config-ws-toggle-admin-approval" style="width: 18px; height: 18px; cursor: pointer;">
+                                                <label for="config-ws-toggle-admin-approval" style="margin-bottom: 0; cursor: pointer; font-size: 0.85rem;">Only admins to accept new member requests</label>
+                                            </div>
+
+                                            <button class="btn btn-primary" onclick="commitWorkspaceConfigurationEdits()"><i class="fas fa-check"></i> Save Changes</button>
+                                            
+                                            <hr style="opacity: 0.1;">
+
+                                            <!-- PENDING APPROVAL LIST (INDEPENDENTLY SCROLLABLE) -->
+                                            <h4 style="font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-top: 4px;">Pending join requests</h4>
+                                            <div id="config-ws-pending-scrollbox" class="pending-requests-section">
+                                                <!-- Live Join Request Cards -->
+                                            </div>
+
+                                            <hr style="opacity: 0.1;">
+                                            <button class="btn btn-danger" onclick="triggerWorkspaceDestructionSequence()" style="width: 100%;"><i class="fas fa-trash-alt"></i> Delete Workspace</button>
+                                        </div>
+
+                                        <div id="non-admin-configuration-fallback-notice" style="color: var(--text-muted); font-size: 0.85rem; text-align: center; padding: 20px; border: 1px dashed var(--border); border-radius: 8px;">
+                                            <i class="fas fa-lock" style="font-size: 1.5rem; margin-bottom: 8px; display: block;"></i> Administrative panel locked. Only the workspace creator holds tuning configurations and join request privileges.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- WINDOW 1: MODAL CREATE WORKSPACE -->
+    <div id="modal-create-workspace-overlay" class="modal-overlay-shroud hidden">
+        <div class="modal-container-window">
+            <div class="modal-view-header">
+                <h3 style="font-weight: 800;">Create new workspace</h3>
+                <button class="control-icon-btn" onclick="closeCreateWorkspaceModal()" style="background: transparent;"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-view-body">
+                <div class="input-group">
+                    <label>Workspace Name <span style="color: var(--error);">*</span></label>
+                    <input type="text" id="new-ws-name" placeholder="Engineering Team Alpha">
+                </div>
+                <div class="input-group">
+                    <label>Description Details</label>
+                    <textarea id="new-ws-desc" rows="3" placeholder="Core architecture and roadmap alignment chamber..."></textarea>
+                </div>
+                <div class="input-group">
+                    <label>Workspace Visual Preset Avatar (URL)</label>
+                    <input type="text" id="new-ws-icon" placeholder="https://images.unsplash.com/... Optional">
+                </div>
+            </div>
+            <div class="modal-view-footer">
+                <button class="btn btn-secondary" onclick="closeCreateWorkspaceModal()" style="width: auto;">Cancel</button>
+                <button class="btn btn-primary" onclick="executeCreateWorkspacePayloadTransaction()" style="width: auto;">Create workspace</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- WINDOW 2: MODAL JOIN WORKSPACE -->
+    <div id="modal-join-workspace-overlay" class="modal-overlay-shroud hidden">
+        <div class="modal-container-window">
+            <div class="modal-view-header">
+                <h3 style="font-weight: 800;">Join workspace</h3>
+                <button class="control-icon-btn" onclick="closeJoinWorkspaceModal()" style="background: transparent;"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-view-body">
+                <div class="input-group">
+                    <label>Enter 6-Digit Workspace Code / PIN <span style="color: var(--error);">*</span></label>
+                    <input type="text" id="join-ws-pin-field" maxlength="6" style="text-align: center; font-size: 1.5rem; font-weight: 700; letter-spacing: 4px;" placeholder="000000">
+                </div>
+                <p style="font-size: 0.8rem; color: var(--text-muted); text-align: center;">If the workspace administrator has enabled gatekeeper protocols, your profile request will hold in their moderation queue.</p>
+            </div>
+            <div class="modal-view-footer">
+                <button class="btn btn-secondary" onclick="closeJoinWorkspaceModal()" style="width: auto;">Cancel</button>
+                <button class="btn btn-primary" onclick="executeJoinWorkspacePinTransaction()" style="width: auto;">Join</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- WINDOW 3: MODAL INVITE DISPATCH MANAGER CONSOLE -->
+    <div id="modal-invite-manager-overlay" class="modal-overlay-shroud hidden">
+        <div class="modal-container-window">
+            <div class="modal-view-header">
+                <h3 style="font-weight: 800;">Invite Professionals</h3>
+                <button class="control-icon-btn" onclick="closeInviteManagerConsole()" style="background: transparent;"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-view-body">
+                <div class="invite-channels-grid">
+                    <div class="invite-channel-card" onclick="dispatchWorkspaceLinkInvitation()">
+                        <i class="fas fa-link" style="font-size: 1.25rem;"></i>
+                        <span>Invite by Link</span>
+                    </div>
+                    <div class="invite-channel-card" onclick="renderWorkspaceInvitationQRCode()">
+                        <i class="fas fa-qrcode" style="font-size: 1.25rem;"></i>
+                        <span>Invite by QR</span>
+                    </div>
+                    <div class="invite-channel-card" onclick="displayWorkspacePinCodeModule()">
+                        <i class="fas fa-hashtag" style="font-size: 1.25rem;"></i>
+                        <span>6-Digit Pin Code</span>
+                    </div>
+                </div>
+
+                <div id="invite-dynamic-workspace-interactive-box" style="border-top: 1px solid var(--border); padding-top: 16px; min-height: 100px;">
+                    <p style="text-align: center; color: var(--text-muted); font-size: 0.85rem;">Select an allocation distribution standard above to initialize secure invitation objects.</p>
+                </div>
+            </div>
+            <div class="modal-view-footer">
+                <button class="btn btn-primary" onclick="closeInviteManagerConsole()">Close Console</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- WINDOW 4: CAMERA CAPTURING EMBEDDED MODAL CANVAS -->
+    <div id="modal-camera-capture-overlay" class="modal-overlay-shroud hidden">
+        <div class="modal-container-window" style="max-width: 550px;">
+            <div class="modal-view-header">
+                <h3 style="font-weight: 800;">Camera Capture Capture Node</h3>
+                <button class="control-icon-btn" onclick="closeDeviceCameraCapturePipeline()" style="background: transparent;"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-view-body" style="padding: 0; background: #000; position: relative; height: 350px; display: flex; align-items: center; justify-content: center;">
+                <video id="camera-stream-viewport" autoplay playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
+                <canvas id="camera-snapshot-processing-bridge" class="hidden"></canvas>
+            </div>
+            <div class="modal-view-footer">
+                <button class="btn btn-secondary" onclick="closeDeviceCameraCapturePipeline()">Abort</button>
+                <button class="btn btn-primary" onclick="executeCameraCaptureSnapshotToCloud()"><i class="fas fa-circle"></i> Snapshot & Upload</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT ARCHITECTURE MODULE -->
+    <script type="module">
+        // Import essential modern Firebase Modules from official CDNs
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { 
+            getAuth, 
+            createUserWithEmailAndPassword, 
+            signInWithEmailAndPassword, 
+            signInWithPopup, 
+            GoogleAuthProvider, 
+            onAuthStateChanged, 
+            sendPasswordResetEmail, 
+            signOut 
+        } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { 
+            getDatabase, 
+            ref, 
+            set, 
+            get, 
+            push, 
+            onValue, 
+            update, 
+            remove, 
+            onDisconnect,
+            runTransaction
+        } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        // Verified Application Configurations Injection Block
+        const firebaseConfig = {
+            apiKey: "AIzaSyCzV75WoXRkbX9Davc_3Vr853Gvej1WEww",
+            authDomain: "serverfluxionary.firebaseapp.com",
+            databaseURL: "https://serverfluxionary-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "serverfluxionary",
+            storageBucket: "serverfluxionary.firebasestorage.app",
+            messagingSenderId: "693102090542",
+            appId: "1:693102090542:web:59298f926dd0257ce682bf"
+        };
+
+        const cloudinaryConfig = {
+            uploadPreset: "ml_default",
+            cloudName: "dufbzl68g"
+        };
+
+        // Instantiating Module Services references
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+        const googleProvider = new GoogleAuthProvider();
+
+        // Application State Management Registry
+        let currentAuthenticatedUserObject = null;
+        let currentUserProfileInternalCachedRecord = null;
+        let currentActiveSelectedWorkspaceId = null;
+        let currentWorkspaceObjectInternalState = null;
+        let authLayoutScreenToggleStateIsLogin = true; // Login vs Signup toggle status
+
+        // Whiteboard Collaboration Memory Space State Engine
+        let whiteboardCanvasHTMLElement = null;
+        let whiteboardDrawingContext2D = null;
+        let whiteboardClientIsDrawingActive = false;
+        let whiteboardSelectedStrokeColorHexCode = "#1e293b";
+        let localUserWhiteboardStrokeLineWidth = 3;
+        let lastCoordinatePointX = 0;
+        let lastCoordinatePointY = 0;
+
+        // Voice Streaming Capture Audio Media Track Memory
+        let audioMediaStreamRecorderInstanceRef = null;
+        let voiceRecordingChunkByteAccumulator = [];
+        let voiceMessageRecordingInitiationTimestamp = null;
+
+        // Video Hardware Capture Core References
+        let activeHardwareCameraMediaStreamObject = null;
+
+        // Realtime View Listeners Destructors Registry mapping to prevent memory leaks
+        let activeWorkspaceContextFirebaseReferencesListenersCleanups = [];
+
+        // --- PLATFORM UX LIFECYCLE ROOT INIT ---
+        document.addEventListener("DOMContentLoaded", () => {
+            initializePlatformAuthenticationStateMonitor();
+            initializeCollaborativeWhiteboardDrawingEngine();
+            window.addEventListener("resize", synchronizeWhiteboardCanvasDimensionsOnViewResize);
+        });
+
+        // Toast Dispatcher Notification Array Utility
+        window.showToast = function(message, type = 'success') {
+            const container = document.getElementById("toast-container");
+            const toast = document.createElement("div");
+            toast.className = `toast ${type}`;
+            
+            let systemIcon = 'fa-check-circle';
+            if (type === 'error') systemIcon = 'fa-exclamation-triangle';
+            if (type === 'mention') systemIcon = 'fa-at';
+
+            toast.innerHTML = `<i class="fas ${systemIcon}"></i><div style="flex:1;">${message}</div>`;
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = "fadeIn 0.2s ease reverse forwards";
+                setTimeout(() => toast.remove(), 200);
+            }, 6000);
+        };
+
+        // --- MODULE SECURITY: FIREBASE AUTHENTICATION FLOWS ---
+        function initializePlatformAuthenticationStateMonitor() {
+            onAuthStateChanged(auth, async (userInstance) => {
+                // Clear any lingering active workspace database connections upon user state mutation context changes
+                purgeActiveWorkspaceDatabaseListeners();
+
+                if (userInstance) {
+                    currentAuthenticatedUserObject = userInstance;
+                    document.getElementById("auth-section").classList.add("hidden");
+                    
+                    // Pull real-time profile summary object snapshot from path
+                    const profileSnapshot = await get(ref(db, `users/${userInstance.uid}`));
+                    if (profileSnapshot.exists()) {
+                        currentUserProfileInternalCachedRecord = profileSnapshot.val();
+                        initializeSecuredApplicationInterfaceLayout();
+                    } else {
+                        // Display Mandatory Registration Completion Profile Drawer
+                        document.getElementById("mandatory-profile-drawer").classList.remove("hidden");
+                    }
+                } else {
+                    currentAuthenticatedUserObject = null;
+                    currentUserProfileInternalCachedRecord = null;
+                    currentActiveSelectedWorkspaceId = null;
+                    document.getElementById("secured-app-workspace").classList.add("hidden");
+                    document.getElementById("mandatory-profile-drawer").classList.add("hidden");
+                    document.getElementById("auth-section").classList.remove("hidden");
+                }
+            });
+        }
+
+        window.toggleAuthLayoutMode = function() {
+            authLayoutScreenToggleStateIsLogin = !authLayoutScreenToggleStateIsLogin;
+            const container = document.querySelector(".auth-card-shield");
+            
+            if (!authLayoutScreenToggleStateIsLogin) {
+                document.getElementById("auth-title").innerText = "Create Account";
+                document.getElementById("auth-subtitle").innerText = "Join Synchronous today and build remote workspaces";
+                document.getElementById("auth-submit-btn").innerText = "Sign Up";
+                document.getElementById("auth-toggle-view-btn").innerText = "Already have an account? Login instead.";
+            } else {
+                document.getElementById("auth-title").innerText = "Welcome Back!";
+                document.getElementById("auth-subtitle").innerText = "Login to synchronize your active workspaces";
+                document.getElementById("auth-submit-btn").innerText = "Sign In";
+                document.getElementById("auth-toggle-view-btn").innerText = "New to the app? What are you even waiting for? Sign up now!";
+            }
+        };
+
+        window.processEmailPasswordAuth = async function() {
+            const email = document.getElementById("auth-email").value.trim();
+            const password = document.getElementById("auth-password").value;
+
+            if (!email || !password) {
+                showToast("Please provide adequate authorization fields.", "error");
+                return;
+            }
+
+            try {
+                if (authLayoutScreenToggleStateIsLogin) {
+                    await signInWithEmailAndPassword(auth, email, password);
+                    showToast("Session authenticated successfully!");
+                } else {
+                    await createUserWithEmailAndPassword(auth, email, password);
+                    showToast("Account created successfully!");
+                }
+            } catch (error) {
+                showToast(error.message, "error");
+            }
+        };
+
+        window.triggerGoogleAuthentication = async function() {
+            try {
+                await signInWithPopup(auth, googleProvider);
+                showToast("Google Session established.");
+            } catch (error) {
+                showToast(error.message, "error");
+            }
+        };
+
+        window.triggerPasswordResetRecovery = async function() {
+            const email = document.getElementById("auth-email").value.trim();
+            if (!email) {
+                showToast("Please type your target email in the address field to dispatch recovery data.", "error");
+                return;
+            }
+            try {
+                await sendPasswordResetEmail(auth, email);
+                showToast("Password reset data dispatched to specified inbox.");
+            } catch (error) {
+                showToast(error.message, "error");
+            }
+        };
+
+        window.previewAvatarChoice = function() {
+            const choice = document.getElementById("profile-avatar-select").value;
+            document.getElementById("profile-avatar-preview").src = choice;
+        };
+
+        window.saveMandatoryProfileData = async function() {
+            const displayName = document.getElementById("profile-display-name").value.trim();
+            const avatarSelection = document.getElementById("profile-avatar-select").value;
+            const description = document.getElementById("profile-description").value.trim();
+
+            if (!displayName) {
+                showToast("Display name text is required.", "error");
+                return;
+            }
+
+            const profilePayload = {
+                uid: currentAuthenticatedUserObject.uid,
+                displayName: displayName,
+                avatar: avatarSelection,
+                description: description,
+                email: currentAuthenticatedUserObject.email,
+                joinedAt: Date.now()
+            };
+
+            try {
+                await set(ref(db, `users/${currentAuthenticatedUserObject.uid}`), profilePayload);
+                currentUserProfileInternalCachedRecord = profilePayload;
+                document.getElementById("mandatory-profile-drawer").classList.add("hidden");
+                showToast("Profile identity verified.");
+                initializeSecuredApplicationInterfaceLayout();
+            } catch (err) {
+                showToast(err.message, "error");
+            }
+        };
+
+        window.executePlatformLogoutSystem = function() {
+            signOut(auth).then(() => {
+                window.location.reload();
+            });
+        };
+
+        // --- PLATFORM CORE SYSTEM LAYOUT SYSTEM INITIALIZATION ---
+        function initializeSecuredApplicationInterfaceLayout() {
+            document.getElementById("secured-app-workspace").classList.remove("hidden");
+            
+            // Set User Identity Visual Footer Badges Elements
+            document.getElementById("footer-user-avatar").src = currentUserProfileInternalCachedRecord.avatar;
+            document.getElementById("footer-user-displayname").innerText = currentUserProfileInternalCachedRecord.displayName;
+
+            // Bind Mention Notification Alerts Realtime Listener for the user
+            bindUserMentionNotificationsAlertStream();
+
+            // Bind Global Left Workspace Navigation Bar Items List Live Stream
+            bindLeftSidebarWorkspacesNavigationRealtimeFeeds();
+        }
+
+        // --- WORKSPACES MANAGEMENT PIPELINES (CRUD & PIN JOIN ENGINE) ---
+        window.openCreateWorkspaceModal = () => document.getElementById("modal-create-workspace-overlay").classList.remove("hidden");
+        window.closeCreateWorkspaceModal = () => document.getElementById("modal-create-workspace-overlay").classList.add("hidden");
+        window.openJoinWorkspaceModal = () => document.getElementById("modal-join-workspace-overlay").classList.remove("hidden");
+        window.closeJoinWorkspaceModal = () => document.getElementById("modal-join-workspace-overlay").classList.add("hidden");
+
+        window.executeCreateWorkspacePayloadTransaction = async function() {
+            const wsName = document.getElementById("new-ws-name").value.trim();
+            const wsDesc = document.getElementById("new-ws-desc").value.trim();
+            let wsIcon = document.getElementById("new-ws-icon").value.trim();
+
+            if (!wsName) {
+                showToast("Workspace title parameter required.", "error");
+                return;
+            }
+            if (!wsIcon) {
+                // Generate automated dynamic geometric abstract placeholder avatar
+                wsIcon = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(wsName)}`;
+            }
+
+            // Generate verified safe mathematically unguessable cryptographically structured 6 digit PIN sequence code
+            const generatedWorkspacePIN6DigitCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+            const workspaceRefNode = push(ref(db, "workspaces"));
+            const generatedWorkspaceId = workspaceRefNode.key;
+
+            const workspaceRecordSchema = {
+                id: generatedWorkspaceId,
+                name: wsName,
+                description: wsDesc,
+                icon: wsIcon,
+                pinCode: generatedWorkspacePIN6DigitCode,
+                creatorUid: currentAuthenticatedUserObject.uid,
+                adminApprovalRequired: false,
+                createdAt: Date.now()
+            };
+
+            try {
+                // Initialize workspace metrics record entry
+                await set(ref(db, `workspaces/${generatedWorkspaceId}`), workspaceRecordSchema);
+                // Map PIN index reference map translation code entry block inside global directory index structure
+                await set(ref(db, `pinIndex/${generatedWorkspacePIN6DigitCode}`), generatedWorkspaceId);
+                // Associate creator user account auto join as active member node record
+                await set(ref(db, `workspaceMembers/${generatedWorkspaceId}/${currentAuthenticatedUserObject.uid}`), {
+                    uid: currentAuthenticatedUserObject.uid,
+                    displayName: currentUserProfileInternalCachedRecord.displayName,
+                    avatar: currentUserProfileInternalCachedRecord.avatar,
+                    joinedAt: Date.now(),
+                    memberTag: "Creator"
+                });
+
+                showToast("Workspace initialized securely.");
+                closeCreateWorkspaceModal();
+                
+                // Clear Form Fields inputs text safely
+                document.getElementById("new-ws-name").value = "";
+                document.getElementById("new-ws-desc").value = "";
+                document.getElementById("new-ws-icon").value = "";
+
+                // Route user viewport view context directly into newly spawned active project instance frame context
+                mountWorkspaceActiveViewportDisplayContext(generatedWorkspaceId);
+
+            } catch (err) {
+                showToast(err.message, "error");
+            }
+        };
+
+        window.executeJoinWorkspacePinTransaction = async function() {
+            const enteredPinCodeString = document.getElementById("join-ws-pin-field").value.trim();
+            if (enteredPinCodeString.length !== 6) {
+                showToast("Verification code must be exactly 6 numerical digits.", "error");
+                return;
+            }
+
+            try {
+                const pinLookupSnapshotObj = await get(ref(db, `pinIndex/${enteredPinCodeString}`));
+                if (!pinLookupSnapshotObj.exists()) {
+                    showToast("It seems to be that this workspace doesnt exist in our database", "error");
+                    return;
+                }
+
+                const targetWorkspaceId = pinLookupSnapshotObj.val();
+                
+                // Inspect targets underlying settings configurations record metadata metrics properties
+                const targetWorkspaceMetadataSnapshot = await get(ref(db, `workspaces/${targetWorkspaceId}`));
+                const workspaceData = targetWorkspaceMetadataSnapshot.val();
+
+                // Inspect if user is already a full active part of that workspace
+                const membershipAuditSnapshot = await get(ref(db, `workspaceMembers/${targetWorkspaceId}/${currentAuthenticatedUserObject.uid}`));
+                if (membershipAuditSnapshot.exists()) {
+                    showToast("You are already verified member of this targeted workspace.");
+                    closeJoinWorkspaceModal();
+                    mountWorkspaceActiveViewportDisplayContext(targetWorkspaceId);
+                    return;
+                }
+
+                if (workspaceData.adminApprovalRequired) {
+                    // Send access entry payload request token to pending collection directory
+                    await set(ref(db, `workspaceJoinRequests/${targetWorkspaceId}/${currentAuthenticatedUserObject.uid}`), {
+                        uid: currentAuthenticatedUserObject.uid,
+                        displayName: currentUserProfileInternalCachedRecord.displayName,
+                        avatar: currentUserProfileInternalCachedRecord.avatar,
+                        timestamp: Date.now()
+                    });
+                    showToast("Request sent successfully");
+                    closeJoinWorkspaceModal();
+                } else {
+                    // Inject user straight directly into full active members pool array map structure node
+                    await set(ref(db, `workspaceMembers/${targetWorkspaceId}/${currentAuthenticatedUserObject.uid}`), {
+                        uid: currentAuthenticatedUserObject.uid,
+                        displayName: currentUserProfileInternalCachedRecord.displayName,
+                        avatar: currentUserProfileInternalCachedRecord.avatar,
+                        joinedAt: Date.now(),
+                        memberTag: "Collaborator"
+                    });
+                    showToast("Joined workspace successfully.");
+                    closeJoinWorkspaceModal();
+                    mountWorkspaceActiveViewportDisplayContext(targetWorkspaceId);
+                }
+                
+                document.getElementById("join-ws-pin-field").value = "";
+
+            } catch (err) {
+                showToast(err.message, "error");
+            }
+        };
+
+        function bindLeftSidebarWorkspacesNavigationRealtimeFeeds() {
+            const spacesDirectoryDatabaseRefNode = ref(db, "workspaces");
+            onValue(spacesDirectoryDatabaseRefNode, (snapshotPool) => {
+                const holderGridContainer = document.getElementById("sidebar-workspaces-node-pool");
+                holderGridContainer.innerHTML = "";
+
+                if (!snapshotPool.exists()) return;
+
+                snapshotPool.forEach((childNode) => {
+                    const workspaceItemData = childNode.val();
+                    const wsId = childNode.key;
+
+                    // Audit visibility tracking - check if user is a member or creator
+                    get(ref(db, `workspaceMembers/${wsId}/${currentAuthenticatedUserObject.uid}`)).then((membershipSnapshot) => {
+                        if (membershipSnapshot.exists() || workspaceItemData.creatorUid === currentAuthenticatedUserObject.uid) {
+                            const workspaceRowButtonElement = document.createElement("button");
+                            workspaceRowButtonElement.className = `workspace-item-btn ${currentActiveSelectedWorkspaceId === wsId ? 'active' : ''}`;
+                            workspaceRowButtonElement.onclick = () => mountWorkspaceActiveViewportDisplayContext(wsId);
+                            
+                            workspaceRowButtonElement.innerHTML = `
+                                <img class="workspace-item-icon" src="${workspaceItemData.icon || 'https://api.dicebear.com/7.x/initials/svg?seed=WS'}" onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=WS'">
+                                <div class="workspace-item-info">
+                                    <div class="workspace-item-name">${escapeHTMLStringsFormatting(workspaceItemData.name)}</div>
+                                    <div style="font-size: 0.7rem; color: var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHTMLStringsFormatting(workspaceItemData.description || 'No description')}</div>
+                                </div>
+                            `;
+                            holderGridContainer.appendChild(workspaceRowButtonElement);
+                        }
+                    });
+                });
+            });
+        }
+
+        // --- SUB-SYSTEM: CONTEXT MOUNTING & MODULE ROUTING ---
+        async function mountWorkspaceActiveViewportDisplayContext(workspaceId) {
+            purgeActiveWorkspaceDatabaseListeners();
+            currentActiveSelectedWorkspaceId = workspaceId;
+
+            try {
+                const spaceMetaSnapshot = await get(ref(db, `workspaces/${workspaceId}`));
+                if (!spaceMetaSnapshot.exists()) {
+                    showToast("Selected workspace workspace instance record fetch failure.", "error");
+                    currentActiveSelectedWorkspaceId = null;
+                    return;
+                }
+
+                currentWorkspaceObjectInternalState = spaceMetaSnapshot.val();
+
+                // Swap views layouts elements flags states visibility controls
+                document.getElementById("workspace-idle-state").classList.add("hidden");
+                document.getElementById("workspace-active-state").classList.remove("hidden");
+
+                // Update Header Layout details content parameters node targets
+                document.getElementById("active-ws-header-icon").src = currentWorkspaceObjectInternalState.icon;
+                document.getElementById("active-ws-header-title").innerText = currentWorkspaceObjectInternalState.name;
+                document.getElementById("active-ws-header-code-pill").innerText = `Code: ${currentWorkspaceObjectInternalState.pinCode}`;
+
+                // Force reset default panel module route tracking
+                switchActiveWorkspaceModuleView('chat');
+
+                // Initialize real-time streams sync configurations for mounted space contextual modules channels hooks
+                initializeChatMessageStreamLiveListenerPipeline();
+                initializeCollaborativeWhiteboardNetworkSyncPipeline();
+                initializeSharedTextboxGridRenderingPipeline();
+                initializeMembersManagementDictionaryModulePool();
+
+                // Refresh Left Nav Bar Visual highlight focus states classes assignments
+                bindLeftSidebarWorkspacesNavigationRealtimeFeeds();
+
+            } catch (err) {
+                showToast(err.message, "error");
+            }
+        }
+
+        window.switchActiveWorkspaceModuleView = function(targetModuleTokenCode) {
+            // De-activate all elements markers tabs references
+            ['chat', 'whiteboard', 'textboxes', 'members'].forEach((token) => {
+                document.getElementById(`tab-trigger-${token}`).classList.remove("active");
+                document.getElementById(`pane-module-slot-${token}`).classList.remove("active");
+            });
+
+            // Activate specific current channel target views elements
+            document.getElementById(`tab-trigger-${targetModuleTokenCode}`).classList.add("active");
+            document.getElementById(`pane-module-slot-${targetModuleTokenCode}`).classList.add("active");
+
+            if (targetModuleTokenCode === 'whiteboard') {
+                synchronizeWhiteboardCanvasDimensionsOnViewResize();
+            }
+        };
+
+        function purgeActiveWorkspaceDatabaseListeners() {
+            activeWorkspaceContextFirebaseReferencesListenersCleanups.forEach((listenerDestructorToken) => {
+                if (typeof listenerDestructorToken === 'function') listenerDestructorToken();
+            });
+            activeWorkspaceContextFirebaseReferencesListenersCleanups = [];
+        }
+
+        // --- MODULE CHANNEL A: CHAT CORE INFRASTRUCTURE (MEDIA, MEMO RECORDERS, @MENTIONS) ---
+        function initializeChatMessageStreamLiveListenerPipeline() {
+            const chatStreamRefNode = ref(db, `workspaceChats/${currentActiveSelectedWorkspaceId}`);
+            
+            const chatListenerUnsubscribeCallback = onValue(chatStreamRefNode, (messagesSnapshotGroup) => {
+                const streamScrollerViewPortContainer = document.getElementById("chat-messages-rendering-stream");
+                streamScrollerViewPortContainer.innerHTML = "";
+
+                if (!messagesSnapshotGroup.exists()) {
+                    streamScrollerViewPortContainer.innerHTML = `<div style="text-align:center; padding: 40px; color: var(--text-muted); font-size:0.85rem;"><i class="fas fa-bubble"></i> No conversation metrics tracked yet. Initiate convergence below.</div>`;
+                    return;
+                }
+
+                messagesSnapshotGroup.forEach((messageNodeChild) => {
+                    const msgPayload = messageNodeChild.val();
+                    const wrapperCard = document.createElement("div");
+                    wrapperCard.className = "chat-bubble-wrapper";
+                    
+                    const calculatedTimestampString = new Date(msgPayload.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    
+                    // Parse text data payload to highlight interactive dynamic mentions tags blocks securely
+                    const transformedBodyHTMLString = parseChatTextContentBodyForMentionsHTMLFormatting(msgPayload.text);
+
+                    let dynamicMediaAttachmentDOMMarkup = "";
+                    if (msgPayload.attachmentUrl) {
+                        if (msgPayload.attachmentType.startsWith("image/")) {
+                            dynamicMediaAttachmentDOMMarkup = `<div class="chat-media-attachment"><img src="${msgPayload.attachmentUrl}" class="chat-image-file" onclick="window.open('${msgPayload.attachmentUrl}', '_blank')"></div>`;
+                        } else if (msgPayload.attachmentType.startsWith("video/")) {
+                            dynamicMediaAttachmentDOMMarkup = `<div class="chat-media-attachment"><video controls src="${msgPayload.attachmentUrl}" class="chat-video-file"></video></div>`;
+                        } else if (msgPayload.attachmentType.startsWith("audio/")) {
+                            dynamicMediaAttachmentDOMMarkup = `<div class="chat-media-attachment"><audio controls src="${msgPayload.attachmentUrl}" class="chat-audio-player"></audio></div>`;
+                        } else {
+                            dynamicMediaAttachmentDOMMarkup = `<a href="${msgPayload.attachmentUrl}" target="_blank" class="chat-generic-file-box"><i class="fas fa-file-alt chat-generic-file-icon"></i><div style="min-width:0;"><div style="font-size:0.8rem; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Document Attached</div><div style="font-size:0.7rem; color:var(--text-muted);">Size within limits</div></div></a>`;
+                        }
+                    }
+
+                    wrapperCard.innerHTML = `
+                        <img class="chat-avatar" src="${msgPayload.senderAvatar || 'https://api.dicebear.com/7.x/bottts/svg?seed=Sync'}" onerror="this.src='https://api.api.dicebear.com/7.x/bottts/svg?seed=Sync'">
+                        <div class="chat-bubble-content">
+                            <div class="chat-sender-header">
+                                <span class="chat-sender-name">${escapeHTMLStringsFormatting(msgPayload.senderDisplayName)}</span>
+                                <span class="chat-message-time">${calculatedTimestampString}</span>
+                            </div>
+                            <div class="chat-text-payload">${transformedBodyHTMLString}</div>
+                            ${dynamicMediaAttachmentDOMMarkup}
+                        </div>
+                    `;
+
+                    streamScrollerViewPortContainer.appendChild(wrapperCard);
+                });
+
+                // Auto Scroll Viewport directly downward smoothly
+                streamScrollerViewPortContainer.scrollTop = streamScrollerViewPortContainer.scrollHeight;
+            });
+
+            activeWorkspaceContextFirebaseReferencesListenersCleanups.push(chatListenerUnsubscribeCallback);
+        }
+
+        window.dispatchChatMessageToServer = async function() {
+            const inputFieldNode = document.getElementById("chat-message-input-element");
+            const rawMessageTextStringPayload = inputFieldNode.value.trim();
+
+            if (!rawMessageTextStringPayload) return;
+
+            const chatMessagesDirectoryTargetNodeRef = push(ref(db, `workspaceChats/${currentActiveSelectedWorkspaceId}`));
+            const chatObjectRecordPayload = {
+                id: chatMessagesDirectoryTargetNodeRef.key,
+                text: rawMessageTextStringPayload,
+                senderUid: currentAuthenticatedUserObject.uid,
+                senderDisplayName: currentUserProfileInternalCachedRecord.displayName,
+                senderAvatar: currentUserProfileInternalCachedRecord.avatar,
+                timestamp: Date.now()
+            };
+
+            // Scan text string context mapping data logs records to trigger server database mentions indexes
+            processInboundChatMessageTextForMentionsTriggers(rawMessageTextStringPayload);
+
+            try {
+                await set(chatMessagesDirectoryTargetNodeRef, chatObjectRecordPayload);
+                inputFieldNode.value = "";
+                document.getElementById("chat-mention-autocomplete-menu").classList.add("hidden");
+            } catch (err) {
+                showToast(err.message, "error");
+            }
+        };
+
+        // --- SUB SYSTEM: MEDIA STORAGE FILE HANDLING INFRASTRUCTURE (CLOUDINARY CORE) ---
+        async function transferBinaryAssetToCloudinaryServerNetworkStore(fileBinaryBlobHandle) {
+            const uploadSizeLimitationBenchmarkBytes = 70 * 1024 * 1024; // 70MB maximum rule enforcement
+            if (fileBinaryBlobHandle.size > uploadSizeLimitationBenchmarkBytes) {
+                throw new Error("Target file media attachment exceeds the maximum size limitation payload threshold of 70MB.");
+            }
+
+            const dataObjectFormDataPayload = new FormData();
+            dataObjectFormDataPayload.append("file", fileBinaryBlobHandle);
+            dataObjectFormDataPayload.append("upload_preset", cloudinaryConfig.uploadPreset);
+
+            const serverRequestURL = `https://api.cloudinary.com/v1_1/${cloudinaryConfig.cloudName}/auto/upload`;
+            
+            const pipelineHttpResponse = await fetch(serverRequestURL, {
+                method: "POST",
+                body: dataObjectFormDataPayload
+            });
+
+            if (!pipelineHttpResponse.ok) {
+                const failureErrorContextJson = await pipelineHttpResponse.json();
+                throw new Error(failureErrorContextJson.error.message || "Cloudinary network transfer sequence execution interruption.");
+            }
+
+            const cloudDataResultJSON = await pipelineHttpResponse.json();
+            return {
+                secureUrlUrl: cloudDataResultJSON.secure_url,
+                mimeTypeCategory: fileBinaryBlobHandle.type || "application/octet-stream"
+            };
+        }
+
+        window.processMediaAttachmentSelection = async function(fileInputDOMNodeRef) {
+            const fileReference = fileInputDOMNodeRef.files[0];
+            if (!fileReference) return;
+
+            showToast("Processing media asset data transfer pipeline (Max 70MB limits)...");
+            
+            try {
+                const cloudAssetResultObject = await transferBinaryAssetToCloudinaryServerNetworkStore(fileReference);
+                
+                // Append media metadata reference block onto server database tracking nodes
+                const TargetChatRefNode = push(ref(db, `workspaceChats/${currentActiveSelectedWorkspaceId}`));
+                await set(TargetChatRefNode, {
+                    id: TargetChatRefNode.key,
+                    text: `Shared a media binary structural node file object: (${fileReference.name})`,
+                    senderUid: currentAuthenticatedUserObject.uid,
+                    senderDisplayName: currentUserProfileInternalCachedRecord.displayName,
+                    senderAvatar: currentUserProfileInternalCachedRecord.avatar,
+                    attachmentUrl: cloudAssetResultObject.secureUrlUrl,
+                    attachmentType: cloudAssetResultObject.mimeTypeCategory,
+                    timestamp: Date.now()
+                });
+
+                showToast("Media node data packet processed successfully.");
+            } catch (err) {
+                showToast(err.message, "error");
+            } finally {
+                fileInputDOMNodeRef.value = ""; // Clear file selector node cache
+            }
+        };
+
+        // --- VOICE STREAM RECORDER CORE LOGIC SYSTEM ---
+        window.toggleVoiceAudioMessageRecording = async function() {
+            const voiceButtonDOMElementRef = document.getElementById("chat-voice-recorder-btn");
+
+            if (audioMediaStreamRecorderInstanceRef && audioMediaStreamRecorderInstanceRef.state === "recording") {
+                // Terminate recording operations processing stream loops loop blocks
+                audioMediaStreamRecorderInstanceRef.stop();
+                voiceButtonDOMElementRef.classList.remove("recording");
+                return;
+            }
+
+            // Initialization voice recording systems sequence controls mapping modules hooks
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                showToast("Your current operating platform container lacks access interfaces for recording media streams.", "error");
+                return;
+            }
+
+            try {
+                voiceRecordingChunkByteAccumulator = [];
+                activeHardwareCameraMediaStreamObject = await navigator.mediaDevices.getUserMedia({ audio: true });
+                
+                audioMediaStreamRecorderInstanceRef = new MediaRecorder(activeHardwareCameraMediaStreamObject);
+                voiceMessageRecordingInitiationTimestamp = Date.now();
+
+                audioMediaStreamRecorderInstanceRef.ondataavailable = (eventStreamPacket) => {
+                    if (eventStreamPacket.data.size > 0) voiceRecordingChunkByteAccumulator.push(eventStreamPacket.data);
+                };
+
+                audioMediaStreamRecorderInstanceRef.onstop = async () => {
+                    // Turn off active microphone hardware chips streams loops context tracks
+                    activeHardwareCameraMediaStreamObject.getTracks().forEach(track => track.stop());
+
+                    const totalRecordedDurationSpanInMilliseconds = Date.now() - voiceMessageRecordingInitiationTimestamp;
+                    const durationBenchmarkLimitThresholdMilliseconds = 8 * 60 * 1000; // 8 minutes limitation rule check
+
+                    if (totalRecordedDurationSpanInMilliseconds > durationBenchmarkLimitThresholdMilliseconds) {
+                        showToast("Voice message recording dropped because duration logs cross maximum 8 minutes allocation boundary.", "error");
+                        return;
+                    }
+
+                    const syntheticCombinedAudioBlobHandle = new Blob(voiceRecordingChunkByteAccumulator, { type: 'audio/webm' });
+                    showToast("Transferring voice payload memo packet to platform repository structures...");
+
+                    try {
+                        const fileProxyDummyMockObject = new File([syntheticCombinedAudioBlobHandle], `voice_memo_${Date.now()}.webm`, { type: 'audio/webm' });
+                        const cloudAssetResultObject = await transferBinaryAssetToCloudinaryServerNetworkStore(fileProxyDummyMockObject);
+                        
+                        const targetChatRefNode = push(ref(db, `workspaceChats/${currentActiveSelectedWorkspaceId}`));
+                        await set(targetChatRefNode, {
+                            id: targetChatRefNode.key,
+                            text: `[Voice Memo Note: ${Math.round(totalRecordedDurationSpanInMilliseconds / 1000)} Seconds]`,
+                            senderUid: currentAuthenticatedUserObject.uid,
+                            senderDisplayName: currentUserProfileInternalCachedRecord.displayName,
+                            senderAvatar: currentUserProfileInternalCachedRecord.avatar,
+                            attachmentUrl: cloudAssetResultObject.secureUrlUrl,
+                            attachmentType: cloudAssetResultObject.mimeTypeCategory,
+                            timestamp: Date.now()
+                        });
+                        showToast("Voice data log uploaded.");
+                    } catch (ex) {
+                        showToast(ex.message, "error");
+                    }
+                };
+
+                audioMediaStreamRecorderInstanceRef.start();
+                voiceButtonDOMElementRef.classList.add("recording");
+                showToast("Voice capture live... Click microphone icon again to stop recording note and upload.");
+
+                // Hard fail timeout safeguard check loop rule for 8 min bounds
+                setTimeout(() => {
+                    if (audioMediaStreamRecorderInstanceRef && audioMediaStreamRecorderInstanceRef.state === "recording") {
+                        audioMediaStreamRecorderInstanceRef.stop();
+                        voiceButtonDOMElementRef.classList.remove("recording");
+                    }
+                }, durationBenchmarkLimitThresholdMilliseconds);
+
+            } catch (err) {
+                showToast("Microphone activation failure sequence logs: " + err.message, "error");
+            }
+        };
+
+        // --- LIVE HARDWARE CAMERA CAPTURING HANDLING SUBSYSTEM ---
+        window.triggerDeviceCameraCapturePipeline = async function() {
+            const overlayModalNode = document.getElementById("modal-camera-capture-overlay");
+            const videoViewportNode = document.getElementById("camera-stream-viewport");
+
+            try {
+                activeHardwareCameraMediaStreamObject = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                videoViewportNode.srcObject = activeHardwareCameraMediaStreamObject;
+                overlayModalNode.classList.remove("hidden");
+            } catch (err) {
+                showToast("Camera access execution exception log logs: " + err.message, "error");
+            }
+        };
+
+        window.closeDeviceCameraCapturePipeline = function() {
+            document.getElementById("modal-camera-capture-overlay").classList.add("hidden");
+            if (activeHardwareCameraMediaStreamObject) {
+                activeHardwareCameraMediaStreamObject.getTracks().forEach(track => track.stop());
+                activeHardwareCameraMediaStreamObject = null;
+            }
+        };
+
+        window.executeCameraCaptureSnapshotToCloud = async function() {
+            const videoViewportNode = document.getElementById("camera-stream-viewport");
+            const snapshotCanvasNode = document.getElementById("camera-snapshot-processing-bridge");
+
+            snapshotCanvasNode.width = videoViewportNode.videoWidth || 640;
+            snapshotCanvasNode.height = videoViewportNode.videoHeight || 480;
+
+            const drawingBridgeCtx = snapshotCanvasNode.getContext("2d");
+            drawingBridgeCtx.drawImage(videoViewportNode, 0, 0, snapshotCanvasNode.width, snapshotCanvasNode.height);
+
+            // Shutdown live lens lenses camera tracking chips streams
+            closeDeviceCameraCapturePipeline();
+
+            showToast("Processing captured canvas snapshot...");
+
+            snapshotCanvasNode.toBlob(async (blobHandle) => {
+                if (!blobHandle) {
+                    showToast("Canvas image extraction sequence failed unexpectedly.", "error");
+                    return;
+                }
+                try {
+                    const dynamicFileCapturedObject = new File([blobHandle], `snapshot_lens_${Date.now()}.jpg`, { type: 'image/jpeg' });
+                    const cloudAssetResultObject = await transferBinaryAssetToCloudinaryServerNetworkStore(dynamicFileCapturedObject);
+                    
+                    const TargetChatRefNode = push(ref(db, `workspaceChats/${currentActiveSelectedWorkspaceId}`));
+                    await set(TargetChatRefNode, {
+                        id: TargetChatRefNode.key,
+                        text: "Captured live media snapshot from camera node asset stream.",
+                        senderUid: currentAuthenticatedUserObject.uid,
+                        senderDisplayName: currentUserProfileInternalCachedRecord.displayName,
+                        senderAvatar: currentUserProfileInternalCachedRecord.avatar,
+                        attachmentUrl: cloudAssetResultObject.secureUrlUrl,
+                        attachmentType: cloudAssetResultObject.mimeTypeCategory,
+                        timestamp: Date.now()
+                    });
+                    showToast("Camera snapshot published.");
+                } catch (e) {
+                    showToast(e.message, "error");
+                }
+            }, 'image/jpeg');
+        };
+
+        // --- SUB PANEL INTEL: @MENTIONS LOGIC PARSER ENGINE ---
+        window.evaluateChatInputFieldForMentions = async function(keyboardEventObject) {
+            const rawTextStringValue = keyboardEventObject.target.value;
+            const menuDropdownNodeElement = document.getElementById("chat-mention-autocomplete-menu");
+
+            const activeLastIndexOfCharacterToken = rawTextStringValue.lastIndexOf("@");
+            if (activeLastIndexOfCharacterToken === -1) {
+                menuDropdownNodeElement.classList.add("hidden");
+                return;
+            }
+
+            // Extract trailing token string characters sequence search parameters array indices logs
+            const prospectiveLookupQueryString = rawTextStringValue.substring(activeLastIndexOfCharacterToken + 1).toLowerCase();
+
+            try {
+                const spaceMembersSnapshotObj = await get(ref(db, `workspaceMembers/${currentActiveSelectedWorkspaceId}`));
+                if (!spaceMembersSnapshotObj.exists()) return;
+
+                menuDropdownNodeElement.innerHTML = "";
+                let accumulatedMatchesQuantityCounter = 0;
+
+                spaceMembersSnapshotObj.forEach((memberDataNodeChild) => {
+                    const memberRecord = memberDataNodeChild.val();
+                    if (memberRecord.displayName.toLowerCase().includes(prospectiveLookupQueryString)) {
+                        accumulatedMatchesQuantityCounter++;
+                        const matchRowDivNode = document.createElement("div");
+                        matchRowDivNode.className = "mention-user-row";
+                        matchRowDivNode.innerHTML = `
+                            <img src="${memberRecord.avatar}" style="width:24px; height:24px; border-radius:50%;">
+                            <span style="font-size:0.85rem; font-weight:600;">${escapeHTMLStringsFormatting(memberRecord.displayName)}</span>
+                            <span style="font-size:0.7rem; color:var(--text-muted); font-family:monospace;">(${memberRecord.uid.substring(0,6)})</span>
+                        `;
+                        
+                        matchRowDivNode.onclick = () => injectSelectedMentionIntoChatInputField(memberRecord.displayName);
+                        menuDropdownNodeElement.appendChild(matchRowDivNode);
+                    }
+                });
+
+                if (accumulatedMatchesQuantityCounter > 0) {
+                    menuDropdownNodeElement.classList.remove("hidden");
+                } else {
+                    menuDropdownNodeElement.classList.add("hidden");
+                }
+
+            } catch (exErr) {
+                console.error(exErr);
+            }
+        };
+
+        function injectSelectedMentionIntoChatInputField(targetUserDisplayNameString) {
+            const inputFieldNode = document.getElementById("chat-message-input-element");
+            const baselineStringValue = inputFieldNode.value;
+            const targetTokenIndex = baselineStringValue.lastIndexOf("@");
+
+            if (targetTokenIndex !== -1) {
+                const syntheticReconstructedMessageBodyString = baselineStringValue.substring(0, targetTokenIndex) + `@${targetUserDisplayNameString} `;
+                inputFieldNode.value = syntheticReconstructedMessageBodyString;
+                inputFieldNode.focus();
+            }
+            document.getElementById("chat-mention-autocomplete-menu").classList.add("hidden");
+        }
+
+        async function processInboundChatMessageTextForMentionsTriggers(rawMessageTextStringPayload) {
+            // Find instances of @Name tokens using regex pattern matching structures logs arrays
+            const wordExtractionRegexPattern = /@([a-zA-Z0-9\s\-\.\_]+)/g;
+            let regexMatchIteratorObject;
+
+            try {
+                const spaceMembersSnapshotObj = await get(ref(db, `workspaceMembers/${currentActiveSelectedWorkspaceId}`));
+                if (!spaceMembersSnapshotObj.exists()) return;
+
+                while ((regexMatchIteratorObject = wordExtractionRegexPattern.exec(rawMessageTextStringPayload)) !== null) {
+                    const cleanExtractedNameStringToken = regexMatchIteratorObject[1].trim();
+                    
+                    spaceMembersSnapshotObj.forEach(async (memberDataNodeChild) => {
+                        const targetMemberObject = memberDataNodeChild.val();
+                        // Verify string equality alignment boundaries matches logs criteria
+                        if (targetMemberObject.displayName.toLowerCase() === cleanExtractedNameStringToken.toLowerCase()) {
+                            // Publish high-priority notification token event target object block onto targeted user registry stream
+                            const mentionAlertRefNode = push(ref(db, `userMentionsRegistryIndex/${targetMemberObject.uid}`));
+                            await set(mentionAlertRefNode, {
+                                id: mentionAlertRefNode.key,
+                                workspaceId: currentActiveSelectedWorkspaceId,
+                                workspaceName: currentWorkspaceObjectInternalState.name,
+                                triggeredByDisplayName: currentUserProfileInternalCachedRecord.displayName,
+                                timestamp: Date.now()
+                            });
+                        }
+                    });
+                }
+            } catch (err) { console.error(err); }
+        }
+
+        function parseChatTextContentBodyForMentionsHTMLFormatting(messageRawBodyTextPayload) {
+            // Replace strings aligning with names of members to render as structural tags tokens badges components
+            let sanitizedHtmlMessageContent = escapeHTMLStringsFormatting(messageRawBodyTextPayload);
+            const formattingPatternMatchRegex = /@([a-zA-Z0-9\s\-\.\_]+)/g;
+
+            sanitizedHtmlMessageContent = sanitizedHtmlMessageContent.replace(formattingPatternMatchRegex, (matchingSubStringToken) => {
+                return `<span class="mention-tag">${matchingSubStringToken}</span>`;
+            });
+
+            return sanitizedHtmlMessageContent;
+        }
+
+        function bindUserMentionNotificationsAlertStream() {
+            const userAlertsIndexNodeRef = ref(db, `userMentionsRegistryIndex/${currentAuthenticatedUserObject.uid}`);
+            
+            const mentionsListenerUnsubscribeCallback = onValue(userAlertsIndexNodeRef, (snapshotBatchPool) => {
+                if (!snapshotBatchPool.exists()) return;
+
+                snapshotBatchPool.forEach((alertRecordNodeChild) => {
+                    const dataAlert = alertRecordNodeChild.val();
+                    const formattedDateTimeStampLabelString = new Date(dataAlert.timestamp).toLocaleString();
+                    
+                    // Dispatch Realtime Warning Toast Alert directly on client workspace interface tracking layers
+                    showToast(`You got mentioned by ${escapeHTMLStringsFormatting(dataAlert.triggeredByDisplayName)} in the workspace ${escapeHTMLStringsFormatting(dataAlert.workspaceName)} at exactly [${formattedDateTimeStampLabelString}]`, "mention");
+                    
+                    // Wipe the processed notification object token from database node pool index directory to avoid double popups
+                    remove(ref(db, `userMentionsRegistryIndex/${currentAuthenticatedUserObject.uid}/${alertRecordNodeChild.key}`));
+                });
+            });
+
+            activeWorkspaceContextFirebaseReferencesListenersCleanups.push(mentionsListenerUnsubscribeCallback);
+        }
+
+        // --- MODULE CHANNEL B: COLLABORATIVE WHITEBOARD COMPONENT ENGINE ---
+        function initializeCollaborativeWhiteboardDrawingEngine() {
+            whiteboardCanvasHTMLElement = document.getElementById("collab-canvas");
+            whiteboardDrawingContext2D = whiteboardCanvasHTMLElement.getContext("2d");
+
+            // Attach low level cursor capturing pointer system hooks tracking input vectors
+            whiteboardCanvasHTMLElement.addEventListener("mousedown", initiateWhiteboardLocalStrokeSequenceAction);
+            whiteboardCanvasHTMLElement.addEventListener("mousemove", trackAndTransmitLocalWhiteboardDrawingVectors);
+            whiteboardCanvasHTMLElement.addEventListener("mouseup", terminateWhiteboardLocalStrokeSequenceAction);
+            whiteboardCanvasHTMLElement.addEventListener("mouseleave", terminateWhiteboardLocalStrokeSequenceAction);
+        }
+
+        function synchronizeWhiteboardCanvasDimensionsOnViewResize() {
+            if (!whiteboardCanvasHTMLElement || !whiteboardCanvasHTMLElement.parentElement) return;
+            
+            // Backup canvas image data contents across structural sizing adjustments sequence loops logs
+            const canvasDataBufferSnapshotURLString = whiteboardCanvasHTMLElement.toDataURL();
+            
+            whiteboardCanvasHTMLElement.width = whiteboardCanvasHTMLElement.parentElement.clientWidth;
+            whiteboardCanvasHTMLElement.height = whiteboardCanvasHTMLElement.parentElement.clientHeight;
+
+            const proxyImageRestoreObject = new Image();
+            proxyImageRestoreObject.src = canvasDataBufferSnapshotURLString;
+            proxyImageRestoreObject.onload = () => {
+                whiteboardDrawingContext2D.drawImage(proxyImageRestoreObject, 0, 0);
+            };
+        }
+
+        window.updateWhiteboardBrushColor = function(hexColorCode, htmlElementRef) {
+            whiteboardSelectedStrokeColorHexCode = hexColorCode;
+            document.querySelectorAll(".color-swatch-picker").forEach(node => node.classList.remove("active"));
+            htmlElementRef.classList.add("active");
+        };
+
+        function initiateWhiteboardLocalStrokeSequenceAction(mouseEvent) {
+            whiteboardClientIsDrawingActive = true;
+            const boundariesBoundingRectBox = whiteboardCanvasHTMLElement.getBoundingClientRect();
+            lastCoordinatePointX = mouseEvent.clientX - boundariesBoundingRectBox.left;
+            lastCoordinatePointY = mouseEvent.clientY - boundariesBoundingRectBox.top;
+
+            // Signal active drawing parameters context tracking indices state metrics logs fields onto the database
+            set(ref(db, `whiteboardStateMetadata/${currentActiveSelectedWorkspaceId}/activityMarker`), {
+                isActivelyDrawing: true,
+                drawerDisplayName: currentUserProfileInternalCachedRecord.displayName,
+                lastEditedByDisplayName: currentUserProfileInternalCachedRecord.displayName,
+                timestamp: Date.now()
+            });
+        }
+
+        function trackAndTransmitLocalWhiteboardDrawingVectors(mouseEvent) {
+            if (!whiteboardClientIsDrawingActive) return;
+
+            const boundariesBoundingRectBox = whiteboardCanvasHTMLElement.getBoundingClientRect();
+            const currentPositionPointX = mouseEvent.clientX - boundariesBoundingRectBox.left;
+            const currentPositionPointY = mouseEvent.clientY - boundariesBoundingRectBox.top;
+
+            // Discharging dynamic geometric structural line vector components points vectors metrics elements logs objects straight onto server database data array queues
+            const drawingVectorRefStreamNode = push(ref(db, `whiteboardVectorStreams/${currentActiveSelectedWorkspaceId}`));
+            set(drawingVectorRefStreamNode, {
+                startX: lastCoordinatePointX,
+                startY: lastCoordinatePointY,
+                endX: currentPositionPointX,
+                endY: currentPositionPointY,
+                strokeColor: whiteboardSelectedStrokeColorHexCode,
+                lineWidth: localUserWhiteboardStrokeLineWidth
+            });
+
+            lastCoordinatePointX = currentPositionPointX;
+            lastCoordinatePointY = currentPositionPointY;
+        }
+
+        function terminateWhiteboardLocalStrokeSequenceAction() {
+            if (!whiteboardClientIsDrawingActive) return;
+            whiteboardClientIsDrawingActive = false;
+
+            // Relinquish active user drawing status metrics registers flags keys blocks fields parameters
+            set(ref(db, `whiteboardStateMetadata/${currentActiveSelectedWorkspaceId}/activityMarker/isActivelyDrawing`), false);
+        }
+
+        function initializeCollaborativeWhiteboardNetworkSyncPipeline() {
+            const drawingVectorsStreamRefNode = ref(db, `whiteboardVectorStreams/${currentActiveSelectedWorkspaceId}`);
+            
+            const whiteboardStreamListenerUnsubscribeCallback = onValue(drawingVectorsStreamRefNode, (snapshotVectorsGroup) => {
+                // Completely erase and redraw state or append dynamically
+                whiteboardDrawingContext2D.clearRect(0, 0, whiteboardCanvasHTMLElement.width, whiteboardCanvasHTMLElement.height);
+
+                if (!snapshotVectorsGroup.exists()) return;
+
+                snapshotVectorsGroup.forEach((vectorNodeChild) => {
+                    const vectorData = vectorNodeChild.val();
+                    executeGeometricVectorDrawingRenderingPass(vectorData);
+                });
+            });
+
+            const operationalMetadataRefNode = ref(db, `whiteboardStateMetadata/${currentActiveSelectedWorkspaceId}/activityMarker`);
+            const whiteboardMetadataListenerUnsubscribeCallback = onValue(operationalMetadataRefNode, (snapshotMetaObj) => {
+                const activeDrawerLabelDOMNode = document.getElementById("whiteboard-active-drawer-status");
+                const lastEditedLabelDOMNode = document.getElementById("whiteboard-last-edited-by-status");
+
+                if (!snapshotMetaObj.exists()) {
+                    activeDrawerLabelDOMNode.innerText = "Active Drawer: None";
+                    lastEditedLabelDOMNode.innerText = "Last edited by: N/A";
+                    return;
+                }
+
+                const metadata = snapshotMetaObj.val();
+                if (metadata.isActivelyDrawing) {
+                    activeDrawerLabelDOMNode.innerText = `Active Drawer: ${metadata.drawerDisplayName} ✍️`;
+                } else {
+                    activeDrawerLabelDOMNode.innerText = "Active Drawer: None";
+                }
+
+                lastEditedLabelDOMNode.innerText = `Last edited by: ${metadata.lastEditedByDisplayName || 'N/A'}`;
+            });
+
+            activeWorkspaceContextFirebaseReferencesListenersCleanups.push(whiteboardStreamListenerUnsubscribeCallback);
+            activeWorkspaceContextFirebaseReferencesListenersCleanups.push(whiteboardMetadataListenerUnsubscribeCallback);
+        }
+
+        function executeGeometricVectorDrawingRenderingPass(vectorDataSchemaObject) {
+            whiteboardDrawingContext2D.beginPath();
+            whiteboardDrawingContext2D.moveTo(vectorDataSchemaObject.startX, vectorDataSchemaObject.startY);
+            whiteboardDrawingContext2D.lineTo(vectorDataSchemaObject.endX, vectorDataSchemaObject.endY);
+            whiteboardDrawingContext2D.strokeStyle = vectorDataSchemaObject.strokeColor;
+            whiteboardDrawingContext2D.lineWidth = vectorDataSchemaObject.lineWidth;
+            whiteboardDrawingContext2D.lineCap = "round";
+            whiteboardDrawingContext2D.stroke();
+            whiteboardDrawingContext2D.closePath();
+        }
+
+        window.clearWhiteboardCanvasEngine = async function() {
+            if (confirm("Are you confident you want to perform complete purge wipe operation of the active collaborative canvas structures fields components text rows sheets layouts layers data logs?")) {
+                try {
+                    await remove(ref(db, `whiteboardVectorStreams/${currentActiveSelectedWorkspaceId}`));
+                    whiteboardDrawingContext2D.clearRect(0, 0, whiteboardCanvasHTMLElement.width, whiteboardCanvasHTMLElement.height);
+                    showToast("Workspace collaborative whiteboard data structures clear operations executed successfully.");
+                } catch (ex) {
+                    showToast(ex.message, "error");
+                }
+            }
+        };
+
+        // --- MODULE CHANNEL C: SHARED TEXTBOX MULTI-INSTANCE LIVE STREAM GRID ENGINE ---
+        function initializeSharedTextboxGridRenderingPipeline() {
+            const textboxesCollectionRefNode = ref(db, `sharedTextboxesRegistry/${currentActiveSelectedWorkspaceId}`);
+            
+            const sharedTextboxesListenerUnsubscribeCallback = onValue(textboxesCollectionRefNode, (textboxesPoolSnapshot) => {
+                const textboxesContainerGridDOMNode = document.getElementById("shared-textboxes-rendering-grid");
+                textboxesContainerGridDOMNode.innerHTML = "";
+
+                if (!textboxesPoolSnapshot.exists()) {
+                    textboxesContainerGridDOMNode.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding: 40px; color: var(--text-muted); font-size:0.85rem;"><i class="fas fa-edit"></i> Shared text array configuration instances empty. Create a synchronized textbox structure block above.</div>`;
+                    return;
+                }
+
+                textboxesPoolSnapshot.forEach((childBoxNode) => {
+                    const boxData = childBoxNode.val();
+                    const textboxUniqueIdCodeKey = childBoxNode.key;
+
+                    const gridCardElementContainerFrameDiv = document.createElement("div");
+                    gridCardElementContainerFrameDiv.className = `textbox-card ${boxData.isImportant ? 'important-board' : ''}`;
+                    
+                    // Determine if foreign remote worker cursor presence metadata marker parameters tracks is currently active
+                    const isRemoteCursorEditingActivelyNow = boxData.activeEditorUid && (boxData.activeEditorUid !== currentAuthenticatedUserObject.uid) && ((Date.now() - boxData.lastActiveCursorTimestamp) < 3500);
+
+                    gridCardElementContainerFrameDiv.innerHTML = `
+                        <div class="textbox-card-header">
+                            <span style="font-size: 0.75rem; font-weight:700; text-transform:uppercase; color: var(--text-muted);"><i class="fas fa-file-text"></i> Node Object Textbox</span>
+                            <div style="display:flex; gap: 6px;">
+                                <button class="control-icon-btn" style="width:28px; height:28px; font-size:0.75rem;" title="Toggle Priority Importance Flag" onclick="toggleSharedTextboxPriorityStatus('${textboxUniqueIdCodeKey}', ${boxData.isImportant})"><i class="fas fa-star" style="color: ${boxData.isImportant ? 'var(--warning)' : 'inherit'};"></i></button>
+                                <button class="control-icon-btn" style="width:28px; height:28px; font-size:0.75rem; color: var(--error);" title="Evict Textbox Destroy Data Link" onclick="executeSharedTextboxInstancePurgeDestruction('${textboxUniqueIdCodeKey}')"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>
+                        <textarea class="textbox-textarea" id="textarea-input-field-node-${textboxUniqueIdCodeKey}" oninput="transmitLocalSharedTextboxTextMutationPayload('${textboxUniqueIdCodeKey}', this.value)" onfocus="engageSharedTextboxLiveCursorFocusLock('${textboxUniqueIdCodeKey}')">${escapeHTMLStringsFormatting(boxData.textContentPayload || '')}</textarea>
+                        <div class="textbox-cursor-tracking-tag ${isRemoteCursorEditingActivelyNow ? 'active-editing' : ''}" id="cursor-tracker-badge-node-${textboxUniqueIdCodeKey}" style="background: var(--primary);">
+                            <i class="fas fa-user-edit"></i> Editing: ${escapeHTMLStringsFormatting(boxData.activeEditorDisplayName || 'Remote Professional')}
+                        </div>
+                    `;
+
+                    textboxesContainerGridDOMNode.appendChild(gridCardElementContainerFrameDiv);
+                });
+            });
+
+            activeWorkspaceContextFirebaseReferencesListenersCleanups.push(sharedTextboxesListenerUnsubscribeCallback);
+        }
+
+        window.createNewSharedTextboxInstance = async function() {
+            const textboxesBaseDirectoryRefNode = ref(db, `sharedTextboxesRegistry/${currentActiveSelectedWorkspaceId}`);
+            
+            try {
+                const snapshotCurrentInventoryCheck = await get(textboxesBaseDirectoryRefNode);
+                let currentTotalTextBoxesInWorkspaceQuantityCount = 0;
+                if (snapshotCurrentInventoryCheck.exists()) {
+                    currentTotalTextBoxesInWorkspaceQuantityCount = snapshotCurrentInventoryCheck.numChildren();
+                }
+
+                if (currentTotalTextBoxesInWorkspaceQuantityCount >= 20) {
+                    showToast("Maximum operational limits boundary configuration constraints rule reached. Each collaboration workspace layout instance supports up to 20 textboxes.", "error");
+                    return;
+                }
+
+                const newTextboxSpawnRefNode = push(textboxesBaseDirectoryRefNode);
+                await set(newTextboxSpawnRefNode, {
+                    id: newTextboxSpawnRefNode.key,
+                    textContentPayload: "",
+                    isImportant: false,
+                    activeEditorUid: "",
+                    activeEditorDisplayName: "",
+                    lastActiveCursorTimestamp: 0
+                });
+
+                showToast("New shared real-time text matrix block component initialized successfully.");
+            } catch (err) {
+                showToast(err.message, "error");
+            }
+        };
+
+        window.transmitLocalSharedTextboxTextMutationPayload = function(textboxId, alteredTextStringPayloadValue) {
+            const targetTextboxPropertyRefNodePath = ref(db, `sharedTextboxesRegistry/${currentActiveSelectedWorkspaceId}/${textboxId}`);
+            
+            update(targetTextboxPropertyRefNodePath, {
+                textContentPayload: alteredTextStringPayloadValue,
+                activeEditorUid: currentAuthenticatedUserObject.uid,
+                activeEditorDisplayName: currentUserProfileInternalCachedRecord.displayName,
+                lastActiveCursorTimestamp: Date.now()
+            });
+        };
+
+        window.engageSharedTextboxLiveCursorFocusLock = function(textboxId) {
+            const targetTextboxPropertyRefNodePath = ref(db, `sharedTextboxesRegistry/${currentActiveSelectedWorkspaceId}/${textboxId}`);
+            
+            update(targetTextboxPropertyRefNodePath, {
+                activeEditorUid: currentAuthenticatedUserObject.uid,
+                activeEditorDisplayName: currentUserProfileInternalCachedRecord.displayName,
+                lastActiveCursorTimestamp: Date.now()
+            });
+        };
+
+        window.toggleSharedTextboxPriorityStatus = async function(textboxId, currentBooleanImportanceStateValue) {
+            const targetPropertyNodePath = ref(db, `sharedTextboxesRegistry/${currentActiveSelectedWorkspaceId}/${textboxId}/isImportant`);
+            try {
+                await set(targetPropertyNodePath, !currentBooleanImportanceStateValue);
+            } catch (err) { console.error(err); }
+        };
+
+        window.executeSharedTextboxInstancePurgeDestruction = async function(textboxId) {
+            if (confirm("Are you confident you want to destroy this synchronized textbox database reference record structure item field node objects elements strings logs safely?")) {
+                try {
+                    await remove(ref(db, `sharedTextboxesRegistry/${currentActiveSelectedWorkspaceId}/${textboxId}`));
+                    showToast("Textbox entry deleted from remote tracking directory grid map cluster system.");
+                } catch (err) { showToast(err.message, "error"); }
+            }
+        };
+
+        // --- MODULE CHANNEL D: MEMBERS DICTIONARY ENGINE & ACCESS AUDITING CONTROL ---
+        function initializeMembersManagementDictionaryModulePool() {
+            // Check if current user holds absolute space creator owner administrative privilege rights permissions markers fields configurations
+            if (currentWorkspaceObjectInternalState.creatorUid === currentAuthenticatedUserObject.uid) {
+                document.getElementById("admin-only-configuration-controls").classList.remove("hidden");
+                document.getElementById("non-admin-configuration-fallback-notice").classList.add("hidden");
+
+                // Pre-populate input configurations forms data parameters models fields fields text parameters variables fields elements structures
+                document.getElementById("config-ws-input-name").value = currentWorkspaceObjectInternalState.name;
+                document.getElementById("config-ws-input-description").value = currentWorkspaceObjectInternalState.description || "";
+                document.getElementById("config-ws-input-icon").value = currentWorkspaceObjectInternalState.icon || "";
+                document.getElementById("config-ws-toggle-admin-approval").checked = currentWorkspaceObjectInternalState.adminApprovalRequired || false;
+
+                // Bind and initialize real-time live scroll list database pipeline listener stream connection hooks tracking pending incoming access entry logs queries
+                initializeAdminPendingAccessJoinRequestsLiveListStream();
+            } else {
+                document.getElementById("admin-only-configuration-controls").classList.add("hidden");
+                document.getElementById("non-admin-configuration-fallback-notice").classList.remove("hidden");
+            }
+
+            // Sync structural roster listing directory interface rows maps components
+            filterWorkspaceMembersDictionaryList();
+        }
+
+        window.filterWorkspaceMembersDictionaryList = function() {
+            const lookupFilterQueryStringValue = document.getElementById("member-dictionary-search-input").value.trim().toLowerCase();
+            const rosterContainerListScrollerDOMNode = document.getElementById("members-dictionary-scroller-node");
+
+            const workspaceRosterDatabaseNodeRef = ref(db, `workspaceMembers/${currentActiveSelectedWorkspaceId}`);
+            
+            const rosterListenerUnsubscribeCallback = onValue(workspaceRosterDatabaseNodeRef, (snapshotRosterGroupPool) => {
+                rosterContainerListScrollerDOMNode.innerHTML = "";
+                
+                if (!snapshotRosterGroupPool.exists()) return;
+
+                snapshotRosterGroupPool.forEach((memberChildNode) => {
+                    const memberDataRowSchema = memberChildNode.val();
+                    const uniqueUidTokenKey = memberChildNode.key;
+
+                    // Execute algorithmic verification checks parsing parameters fields criteria filters matching queries values bounds properties
+                    const matchScoreDisplayNameCheck = memberDataRowSchema.displayName.toLowerCase().includes(lookupFilterQueryStringValue);
+                    const matchScoreUidStringCheck = memberDataRowSchema.uid.toLowerCase().includes(lookupFilterQueryStringValue);
+
+                    if (lookupFilterQueryStringValue && !matchScoreDisplayNameCheck && !matchScoreUidStringCheck) {
+                        return; // Evict skip iteration track sequence logs criteria check bounds
+                    }
+
+                    const dictionaryRowWidgetFrameDiv = document.createElement("div");
+                    dictionaryRowWidgetFrameDiv.className = "member-dict-row";
+
+                    // Formulate dynamic control buttons mapping privileges rules context structures bounds metrics fields variables assignments
+                    let structuralActionConsoleControlsDOMMarkup = "";
+                    
+                    if (uniqueUidTokenKey === currentAuthenticatedUserObject.uid) {
+                        // User holds option to alter modify custom localized member tags tags properties records values fields fields text within this localized bounds project
+                        structuralActionConsoleControlsDOMMarkup = `<button class="btn btn-secondary" style="padding: 6px 12px; font-size:0.75rem; width:auto;" onclick="triggerMemberTagCustomizationConsolePrompt('${memberDataRowSchema.memberTag || ''}')"><i class="fas fa-tag"></i> Set Custom Tag</button>`;
+                    } else if (currentWorkspaceObjectInternalState.creatorUid === currentAuthenticatedUserObject.uid) {
+                        // Administrator holds rights capabilities models parameters choices to evict purge drop kick delete remote workers users records from access loops bounds pools
+                        structuralActionConsoleControlsDOMMarkup = `<button class="btn btn-danger" style="padding: 6px 12px; font-size:0.75rem; width:auto;" onclick="executeAdministrativeKickPurgeUserOperation('${uniqueUidTokenKey}')"><i class="fas fa-user-minus"></i> Remove</button>`;
+                    }
+
+                    const visualMemberTagPillDOMMarkup = memberDataRowSchema.memberTag ? `<span class="custom-member-badge">${escapeHTMLStringsFormatting(memberDataRowSchema.memberTag)}</span>` : '';
+
+                    dictionaryRowWidgetFrameDiv.innerHTML = `
+                        <div class="member-info-block">
+                            <img class="member-avatar-img" src="${memberDataRowSchema.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=SyncUser'}">
+                            <div class="member-identity-meta">
+                                <div class="member-name-line">
+                                    <span>${escapeHTMLStringsFormatting(memberDataRowSchema.displayName)}</span>
+                                    ${visualMemberTagPillDOMMarkup}
+                                </div>
+                                <div class="member-uid-line">UID: ${uniqueUidTokenKey}</div>
+                            </div>
+                        </div>
+                        <div class="member-action-block">
+                            ${structuralActionConsoleControlsDOMMarkup}
+                        </div>
+                    `;
+
+                    rosterContainerListScrollerDOMNode.appendChild(dictionaryRowWidgetFrameDiv);
+                });
+            });
+
+            activeWorkspaceContextFirebaseReferencesListenersCleanups.push(rosterListenerUnsubscribeCallback);
+        };
+
+        window.triggerMemberTagCustomizationConsolePrompt = async function(currentActiveTagValueLabel) {
+            const diagnosticPromptInputTextValue = prompt("Configure or edit your custom specialized operational member tag parameter description for this specific active workspace environment context instance (e.g. 'Faith's parents', 'Lead Architect'):", currentActiveTagValueLabel);
+            
+            if (diagnosticPromptInputTextValue === null) return; // User tracking sequence abort context trigger bounds check
+
+            try {
+                await set(ref(db, `workspaceMembers/${currentActiveSelectedWorkspaceId}/${currentAuthenticatedUserObject.uid}/memberTag`), diagnosticPromptInputTextValue.trim());
+                showToast("Custom member tag metadata record tracking parameter updated successfully for this workspace bounds instance context.");
+                filterWorkspaceMembersDictionaryList();
+            } catch (err) { showToast(err.message, "error"); }
+        };
+
+        window.executeAdministrativeKickPurgeUserOperation = async function(targetUserUidKeyToKick) {
+            if (confirm("Are you entirely confident you want to revoke authorization permissions keys and kick this professional record asset node from this workspace environment bounds database maps pool arrays logs safely?")) {
+                try {
+                    await remove(ref(db, `workspaceMembers/${currentActiveSelectedWorkspaceId}/${targetUserUidKeyToKick}`));
+                    showToast("User node revoked and evicted from current workspace member logs roster registry maps.");
+                    filterWorkspaceMembersDictionaryList();
+                } catch (err) { showToast(err.message, "error"); }
+            }
+        };
+
+        window.commitWorkspaceConfigurationEdits = async function() {
+            const updatedName = document.getElementById("config-ws-input-name").value.trim();
+            const updatedDesc = document.getElementById("config-ws-input-description").value.trim();
+            const updatedIcon = document.getElementById("config-ws-input-icon").value.trim();
+            const updatedToggleApprovalFlag = document.getElementById("config-ws-toggle-admin-approval").checked;
+
+            if (!updatedName) {
+                showToast("Workspace title context name parameter cannot be empty.", "error");
+                return;
+            }
+
+            const targetUpdatePatchPayloadMapSchema = {
+                name: updatedName,
+                description: updatedDesc,
+                icon: updatedIcon,
+                adminApprovalRequired: updatedToggleApprovalFlag
+            };
+
+            try {
+                await update(ref(db, `workspaces/${currentActiveSelectedWorkspaceId}`), targetUpdatePatchPayloadMapSchema);
+                showToast("Workspace configuration metrics updated successfully across deployment clusters records.");
+                
+                // Re-sync operational internal structural viewport header metrics labels states changes configurations logs
+                mountWorkspaceActiveViewportDisplayContext(currentActiveSelectedWorkspaceId);
+            } catch (err) { showToast(err.message, "error"); }
+        };
+
+        function initializeAdminPendingAccessJoinRequestsLiveListStream() {
+            const requestsDirectoryPathNodeRef = ref(db, `workspaceJoinRequests/${currentActiveSelectedWorkspaceId}`);
+            
+            const pendingRequestsStreamListenerUnsubscribeCallback = onValue(requestsDirectoryPathNodeRef, (snapshotRequestsPool) => {
+                const scrollBoxHolderNodeDOMElement = document.getElementById("config-ws-pending-scrollbox");
+                scrollBoxHolderNodeDOMElement.innerHTML = "";
+
+                if (!snapshotRequestsPool.exists()) {
+                    scrollBoxHolderNodeDOMElement.innerHTML = `<div style="text-align:center; padding:20px; font-size:0.75rem; color:var(--text-muted);">No pending entries holding queue.</div>`;
+                    return;
+                }
+
+                snapshotRequestsPool.forEach((childRequestNode) => {
+                    const reqData = childRequestNode.val();
+                    const requesterUidTokenKey = childRequestNode.key;
+
+                    const cardFrameBoxNodeDiv = document.createElement("div");
+                    cardFrameBoxNodeDiv.className = "pending-request-card";
+                    cardFrameBoxNodeDiv.innerHTML = `
+                        <div style="font-weight:700; color:var(--text-main);">${escapeHTMLStringsFormatting(reqData.displayName)}</div>
+                        <div style="font-size:0.7rem; color:var(--text-muted); font-family:monospace; word-break:break-all;">UID: ${requesterUidTokenKey}</div>
+                        <div style="display:flex; gap:6px; margin-top:4px;">
+                            <button class="btn btn-primary" style="padding:4px 8px; font-size:0.75rem;" onclick="processAdministrativeJoinApprovalDecision('${requesterUidTokenKey}', true, ${JSON.stringify(reqData)})">Accept</button>
+                            <button class="btn btn-secondary" style="padding:4px 8px; font-size:0.75rem; color:var(--error);" onclick="processAdministrativeJoinApprovalDecision('${requesterUidTokenKey}', false, null)">Reject</button>
+                        </div>
+                    `;
+                    scrollBoxHolderNodeDOMElement.appendChild(cardFrameBoxNodeDiv);
+                });
+            });
+
+            activeWorkspaceContextFirebaseReferencesListenersCleanups.push(pendingRequestsStreamListenerUnsubscribeCallback);
+        }
+
+        window.processAdministrativeJoinApprovalDecision = async function(applicantUidKeyToken, isApprovedBooleanStatusChoice, applicantDataProfileObjectSchema) {
+            try {
+                if (isApprovedBooleanStatusChoice) {
+                    // Inject user identity entry straight into active workspace members group node tree collection structure
+                    await set(ref(db, `workspaceMembers/${currentActiveSelectedWorkspaceId}/${applicantUidKeyToken}`), {
+                        uid: applicantUidKeyToken,
+                        displayName: applicantDataProfileObjectSchema.displayName,
+                        avatar: applicantDataProfileObjectSchema.avatar,
+                        joinedAt: Date.now(),
+                        memberTag: "Collaborator"
+                    });
+                    showToast("Applicant entry approved into current active collaboration roster bounds.");
+                } else {
+                    showToast("Applicant data connection request queue entry dismissed and rejected securely.");
+                }
+
+                // Erase remove clean up holding pending request tracking entry record token object from structural lists node index queue directory paths
+                await remove(ref(db, `workspaceJoinRequests/${currentActiveSelectedWorkspaceId}/${applicantUidKeyToken}`));
+
+            } catch (exErr) { showToast(exErr.message, "error"); }
+        };
+
+        window.triggerWorkspaceDestructionSequence = async function() {
+            if (confirm("🚨 ABSOLUTE DESTRUCTION WARNING: Are you fully certain you want to permanently erase, wipe, delete and remove this entire workspace environment instance along with all its associated database tracking chat streams, whiteboards, textboxes grid map logs, records layers components text rows channels entries safely? This operation is absolute and cannot be undone.")) {
+                try {
+                    const pinIndexToPurgeWipeClearCodeKey = currentWorkspaceObjectInternalState.pinCode;
+                    
+                    // Core data infrastructure collections cascade target deletes
+                    await remove(ref(db, `workspaces/${currentActiveSelectedWorkspaceId}`));
+                    await remove(ref(db, `pinIndex/${pinIndexToPurgeWipeClearCodeKey}`));
+                    await remove(ref(db, `workspaceMembers/${currentActiveSelectedWorkspaceId}`));
+                    await remove(ref(db, `workspaceChats/${currentActiveSelectedWorkspaceId}`));
+                    await remove(ref(db, `whiteboardVectorStreams/${currentActiveSelectedWorkspaceId}`));
+                    await remove(ref(db, `whiteboardStateMetadata/${currentActiveSelectedWorkspaceId}`));
+                    await remove(ref(db, `sharedTextboxesRegistry/${currentActiveSelectedWorkspaceId}`));
+                    await remove(ref(db, `workspaceJoinRequests/${currentActiveSelectedWorkspaceId}`));
+
+                    showToast("Workspace records data infrastructure objects deleted completely across system servers clusters layout nodes arrays layers.");
+                    
+                    // Pivot client interface state tracking layout display windows elements focus context safely straight back into default empty space view parameters state mappings
+                    purgeActiveWorkspaceDatabaseListeners();
+                    currentActiveSelectedWorkspaceId = null;
+                    currentWorkspaceObjectInternalState = null;
+                    document.getElementById("workspace-active-state").classList.add("hidden");
+                    document.getElementById("workspace-idle-state").classList.remove("hidden");
+                    
+                    bindLeftSidebarWorkspacesNavigationRealtimeFeeds();
+
+                } catch (err) { showToast(err.message, "error"); }
+            }
+        };
+
+        // --- SUB-SYSTEM MODULE: INVITATION PACKETS & LINKS DISPATCH DISTRIBUTOR ---
+        window.triggerInviteManagerConsole = () => {
+            document.getElementById("modal-invite-manager-overlay").classList.remove("hidden");
+            displayWorkspacePinCodeModule(); // Fallback focus presentation layer
+        };
+        window.closeInviteManagerConsole = () => document.getElementById("modal-invite-manager-overlay").classList.add("hidden");
+
+        window.displayWorkspacePinCodeModule = function() {
+            const panelInteractiveBoxTargetDiv = document.getElementById("invite-dynamic-workspace-interactive-box");
+            panelInteractiveBoxTargetDiv.innerHTML = `
+                <div style="text-align:center; padding:10px;">
+                    <p style="font-size:0.875rem; font-weight:600; color:var(--text-muted); margin-bottom:8px;">6-Digit Access Entry PIN Pin Token PIN</p>
+                    <h1 style="font-size:2.25rem; font-weight:800; letter-spacing:4px; color:var(--primary); font-family:monospace;">${currentWorkspaceObjectInternalState.pinCode}</h1>
+                    <p style="font-size:0.75rem; color:var(--text-muted); margin-top:8px;">Provide this 6-digit access token code parameter sequence to target team workers to input inside their sidebar dashboard entry console field panel.</p>
+                </div>
+            `;
+        };
+
+        window.dispatchWorkspaceLinkInvitation = function() {
+            const panelInteractiveBoxTargetDiv = document.getElementById("invite-dynamic-workspace-interactive-box");
+            
+            // Build absolute deployment URL string mapping context link structure
+            const generatedInviteHyperlinkTokenAddressPathUrl = `${window.location.origin}${window.location.pathname}?inviteCodeTokenKeyPin=${currentWorkspaceObjectInternalState.pinCode}`;
+            
+            // Professional copy message structure template formatting rule
+            const formattedProfessionalInviteMessageStringPayload = `${currentUserProfileInternalCachedRecord.displayName} wants to invite you to ${currentWorkspaceObjectInternalState.name} on Synchronous!`;
+
+            panelInteractiveBoxTargetDiv.innerHTML = `
+                <div style="text-align:left; padding:4px;">
+                    <p style="font-size:0.8rem; font-weight:700; color:var(--text-muted); margin-bottom:6px;">Generated Professional Invitation Copy String Text Data Packet</p>
+                    <textarea id="clipboard-copy-buffer-target-area" rows="3" style="font-size:0.825rem; margin-bottom:10px; background:#f8fafc;" readonly>${formattedProfessionalInviteMessageStringPayload} Join context layer link entry point link: ${generatedInviteHyperlinkTokenAddressPathUrl}</textarea>
+                    <button class="btn btn-primary" style="padding:8px 12px; font-size:0.8rem;" onclick="executeClipboardCopyOperationActionsSequence()"><i class="fas fa-copy"></i> Copy Message to Clipboard</button>
+                </div>
+            `;
+        };
+
+        window.executeClipboardCopyOperationActionsSequence = function() {
+            const textAreaBufferNodeDOMElementRef = document.getElementById("clipboard-copy-buffer-target-area");
+            textAreaBufferNodeDOMElementRef.select();
+            textAreaBufferNodeDOMElementRef.setSelectionRange(0, 99999); // Mobile compatibility boundary constraints support assignment
+            
+            navigator.clipboard.writeText(textAreaBufferNodeDOMElementRef.value).then(() => {
+                showToast("Professional invite copy template string payload message copied along with link address reference into memory registry successfully.");
+            }).catch(() => {
+                showToast("System background memory clipboard operational access denied.", "error");
+            });
+        };
+
+        window.renderWorkspaceInvitationQRCode = function() {
+            const panelInteractiveBoxTargetDiv = document.getElementById("invite-dynamic-workspace-interactive-box");
+            panelInteractiveBoxTargetDiv.innerHTML = `
+                <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:10px;">
+                    <p style="font-size:0.8rem; font-weight:700; color:var(--text-muted); margin-bottom:8px;">Scan Matrix QR Access Entry Code Node</p>
+                    <div id="qrcode-canvas-node-rendering-target" class="qr-display-node"></div>
+                    <p style="font-size:0.7rem; color:var(--text-muted); text-align:center; margin-top:6px;">Mobile lens camera hardware components tracking parsing tracking code vectors can interpret this cryptographic signature to request interface mapping nodes sync paths routes access privileges tokens.</p>
+                </div>
+            `;
+
+            const compositeSyntheticLinkPayloadAddressString = `${window.location.origin}${window.location.pathname}?inviteCodeTokenKeyPin=${currentWorkspaceObjectInternalState.pinCode}`;
+            
+            // Execute QR dynamic module painter initialization sequence
+            setTimeout(() => {
+                new QRCode(document.getElementById("qrcode-canvas-node-rendering-target"), {
+                    text: compositeSyntheticLinkPayloadAddressString,
+                    width: 140,
+                    height: 140,
+                    colorDark : "#0f172a",
+                    colorLight : "#ffffff",
+                    correctLevel : QRCode.CorrectLevel.H
+                });
+            }, 100);
+        };
+
+        // --- ENCAPSULATION SECURE FILTERS LOGIC PARSERS UTILS ---
+        function escapeHTMLStringsFormatting(rawInputStringTextValueToSanitize) {
+            if (!rawInputStringTextValueToSanitize) return "";
+            return rawInputStringTextValueToSanitize
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
