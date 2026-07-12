@@ -1,1166 +1,596 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Synchronous</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-<style>
-:root{
-  --primary:#2563eb; --primary-hover:#1d4ed8; --bg:#f8fafc; --card-bg:#ffffff;
-  --text-main:#1e293b; --text-muted:#64748b; --error:#ef4444; --success:#10b981;
-  --warning:#f59e0b; --sidebar-width:320px;
-}
-*{margin:0;padding:0;box-sizing:border-box;font-family:'Inter',sans-serif;}
-body{background:var(--bg);color:var(--text-main);line-height:1.6;overflow-x:hidden;}
-.hidden{display:none !important;}
-.btn{cursor:pointer;padding:12px 24px;border-radius:8px;border:none;font-weight:600;transition:all .3s cubic-bezier(.4,0,.2,1);display:inline-flex;align-items:center;justify-content:center;gap:8px;}
-.btn-primary{background:var(--primary);color:#fff;width:100%;}
-.btn-primary:hover{background:var(--primary-hover);transform:translateY(-2px);box-shadow:0 4px 12px rgba(37,99,235,.2);}
-.btn-google{background:#fff;color:#475569;border:1px solid #cbd5e1;width:100%;margin-top:10px;}
-.btn-google:hover{background:#f8fafc;}
-.btn:active{transform:scale(.95);}
-.btn:disabled{background:#cbd5e1;cursor:not-allowed;}
-.btn-secondary{background:#f1f5f9;color:var(--text-main);width:100%;}
-.btn-danger{background:#fee2e2;color:#b91c1c;}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Synchronous | Real-Time Collaboration Platform</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --error: #ef4444;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --sidebar-width: 300px;
+        }
 
-nav{background:#fff;padding:1rem 5%;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 10px rgba(0,0,0,.05);position:sticky;top:0;z-index:100;}
-.logo{font-size:1.5rem;font-weight:800;color:var(--primary);letter-spacing:-1px;cursor:pointer;display:flex;align-items:center;gap:10px;}
-.hamburger-menu{font-size:1.25rem;color:var(--text-main);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:8px;border-radius:6px;transition:background .2s;}
-.hamburger-menu:hover{background:#f1f5f9;}
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg); color: var(--text-main); line-height: 1.6; overflow-x: hidden; transition: margin-left 0.3s ease; }
 
-.sidebar{position:fixed;left:calc(-1 * var(--sidebar-width));top:0;width:var(--sidebar-width);height:100%;background:#fff;box-shadow:5px 0 25px rgba(0,0,0,.1);z-index:1001;transition:.3s cubic-bezier(.4,0,.2,1);padding:30px 20px;overflow-y:auto;}
-.sidebar.active{left:0;}
-.profile-drawer{position:fixed;left:-100%;top:0;width:100%;max-width:450px;height:100%;background:#fff;box-shadow:5px 0 25px rgba(0,0,0,.1);z-index:2000;transition:.3s cubic-bezier(.4,0,.2,1);padding:40px 30px;overflow-y:auto;}
-.profile-drawer.active{left:0;}
-.right-drawer{position:fixed;right:-100%;top:0;width:100%;max-width:480px;height:100%;background:#fff;box-shadow:-5px 0 25px rgba(0,0,0,.1);z-index:1500;transition:.35s cubic-bezier(.4,0,.2,1);padding:30px 25px;overflow-y:auto;}
-.right-drawer.active{right:0;}
-.drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);opacity:0;visibility:hidden;transition:.3s;z-index:1000;backdrop-filter:blur(2px);}
-.drawer-overlay.active{opacity:1;visibility:visible;}
+        /* Utility Classes */
+        .hidden { display: none !important; }
+        .btn { cursor: pointer; padding: 12px 24px; border-radius: 8px; border: none; font-weight: 600; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-primary { background: var(--primary); color: white; width: 100%; }
+        .btn-primary:hover { background: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2); }
+        .btn:active { transform: scale(0.95); }
+        .btn:disabled { background: #cbd5e1; cursor: not-allowed; }
 
-.auth-container{max-width:420px;margin:60px auto;padding:40px;background:#fff;border-radius:16px;box-shadow:0 10px 25px rgba(0,0,0,.05);}
-.input-group{margin-bottom:18px;}
-.input-group label{display:block;margin-bottom:8px;font-weight:500;color:var(--text-muted);font-size:.9rem;}
-input,textarea,select{width:100%;padding:12px;border:1px solid #e2e8f0;border-radius:8px;outline:none;transition:.2s;background:#fff;color:var(--text-main);}
-input:focus,textarea:focus,select:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.1);}
-.experimental-warning{background:#fffbeb;border:1px solid #fef3c7;color:#b45309;padding:12px;border-radius:8px;font-size:.8rem;margin-bottom:15px;display:flex;gap:8px;align-items:flex-start;}
+        .btn-google { background: #ffffff; color: #1e293b; border: 1px solid #cbd5e1; width: 100%; margin-top: 10px; }
+        .btn-google:hover { background: #f1f5f9; transform: translateY(-1px); }
+        .btn-link { background: none; color: var(--text-muted); font-size: 0.9rem; font-weight: 400; padding: 5px; width: auto; margin-top: 10px; text-decoration: none; display: inline-block; }
+        .btn-link:hover { color: var(--primary); }
 
-.pfp-container{display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:20px;}
-.pfp-preview{width:100px;height:100px;border-radius:50%;object-fit:cover;background:#e2e8f0;border:2px solid var(--primary);}
-.avatar-sm{width:36px;height:36px;border-radius:50%;object-fit:cover;background:#e2e8f0;flex-shrink:0;}
+        .disclaimer-box { background: #fffbeb; border: 1px solid #fef3c7; color: #b45309; padding: 12px; border-radius: 8px; font-size: 0.8rem; margin: 15px 0; text-align: center; font-weight: 500; }
 
-#toast-container{position:fixed;bottom:30px;right:30px;z-index:9999;}
-.toast{background:#fff;color:var(--text-main);padding:16px 24px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.15);margin-top:10px;display:flex;align-items:center;gap:12px;min-width:300px;border-left:4px solid var(--primary);animation:slideIn .3s ease-out forwards;}
-.toast.success{border-color:var(--success);}
-.toast.error{border-color:var(--error);}
-@keyframes slideIn{from{transform:translateX(100%);opacity:0;}to{transform:translateX(0);opacity:1;}}
-.fade-in{animation:fadeIn .4s cubic-bezier(.16,1,.3,1) forwards;}
-@keyframes fadeIn{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+        /* Responsive Design Fixes */
+        @media (max-width: 768px) {
+            :root { --sidebar-width: 250px; }
+            nav { padding: 1rem 3%; }
+            .dashboard { padding: 0 15px; margin: 20px auto; }
+            .auth-container { margin: 40px 15px; padding: 25px; }
+            h1 { font-size: 1.5rem; }
+        }
 
-.main-empty{display:flex;align-items:center;justify-content:center;height:calc(100vh - 70px);color:var(--text-muted);font-size:1.2rem;font-weight:500;text-align:center;padding:20px;}
+        @media (min-width: 1920px) {
+            .dashboard { max-width: 1400px; }
+            body { font-size: 1.2rem; }
+        }
 
-.ws-list-item{display:flex;align-items:center;gap:12px;padding:12px;border-radius:10px;cursor:pointer;margin-bottom:8px;transition:.2s;}
-.ws-list-item:hover{background:#f1f5f9;}
-.ws-list-item.active-ws{background:rgba(37,99,235,.1);}
-.ws-icon{width:42px;height:42px;border-radius:10px;object-fit:cover;background:#e2e8f0;flex-shrink:0;}
+        /* Navigation */
+        nav { background: white; padding: 1rem 5%; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; }
+        .logo { font-size: 1.5rem; font-weight: 800; color: var(--primary); letter-spacing: -1px; cursor: pointer; display: flex; align-items: center; }
 
-.card{background:#fff;border-radius:12px;padding:20px;box-shadow:0 4px 6px rgba(0,0,0,.02);margin-bottom:16px;border:1px solid #f1f5f9;}
-.section-title{font-weight:700;font-size:1.05rem;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
-.scroll-box{max-height:260px;overflow-y:auto;}
-.tab-bar{display:flex;gap:6px;background:#f1f5f9;padding:5px;border-radius:10px;margin-bottom:20px;overflow-x:auto;}
-.tab-btn{padding:9px 16px;border-radius:8px;border:none;background:transparent;cursor:pointer;font-weight:600;font-size:.85rem;color:var(--text-muted);white-space:nowrap;transition:.2s;}
-.tab-btn.active{background:#fff;color:var(--primary);box-shadow:0 2px 6px rgba(0,0,0,.08);}
+        /* Sidebar Menu (Profile View/Edit) */
+        .sidebar { position: fixed; left: calc(-1 * var(--sidebar-width)); top: 0; width: var(--sidebar-width); height: 100%; background: white; box-shadow: 5px 0 25px rgba(0,0,0,0.1); z-index: 1001; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); padding: 30px 20px; overflow-y: auto; }
+        .sidebar.active { left: 0; }
+        .sidebar-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.3); opacity: 0; visibility: hidden; transition: 0.3s; z-index: 1000; backdrop-filter: blur(2px); }
+        .sidebar-overlay.active { opacity: 1; visibility: visible; }
+        
+        /* Forced Drawer (Profile Setup) */
+        .forced-drawer { position: fixed; right: -400px; top: 0; width: 400px; max-width: 100%; height: 100%; background: white; box-shadow: -5px 0 25px rgba(0,0,0,0.1); z-index: 2001; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); padding: 40px 30px; overflow-y: auto; }
+        .forced-drawer.active { right: 0; }
+        .drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 2000; backdrop-filter: blur(4px); display: none; }
+        .drawer-overlay.active { display: block; }
 
-.member-row{display:flex;align-items:center;gap:12px;padding:10px;border-radius:8px;margin-bottom:6px;}
-.member-row:hover{background:#f8fafc;}
-.tag-pill{font-size:.7rem;background:rgba(37,99,235,.1);color:var(--primary);padding:2px 8px;border-radius:20px;font-weight:600;}
+        /* Auth Container */
+        .auth-container { max-width: 420px; margin: 60px auto; padding: 40px; background: white; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); text-align: center; }
+        .input-group { margin-bottom: 20px; text-align: left; }
+        .input-group label { display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-muted); }
+        input, textarea, select { width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; outline: none; transition: 0.2s; background: #fff; }
+        input:focus, textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
 
-#whiteboard-canvas{border:1px solid #e2e8f0;border-radius:10px;background:#fff;touch-action:none;cursor:crosshair;width:100%;height:420px;}
-.wb-presence{font-size:.8rem;color:var(--primary);font-weight:600;height:18px;}
+        /* Profile Elements */
+        .avatar-container { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 20px; }
+        .avatar-preview { width: 90px; height: 90px; border-radius: 50%; object-fit: cover; background: #e2e8f0; border: 2px solid var(--primary); }
+        .nav-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; background: #e2e8f0; }
 
-.textbox-card{border:1px solid #e2e8f0;border-radius:10px;padding:14px;margin-bottom:12px;}
-.textbox-card.important{border-left:4px solid var(--warning);}
-.textbox-card textarea{min-height:90px;font-size:.9rem;}
-.textbox-meta{font-size:.72rem;color:var(--text-muted);margin-top:6px;display:flex;justify-content:space-between;}
+        /* Dashboard Space */
+        .dashboard { max-width: 1000px; margin: 40px auto; padding: 0 20px; }
+        .welcome-card { background: white; padding: 35px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.02); border-left: 5px solid var(--primary); margin-bottom: 30px; }
+        .workspace-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+        .channel-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border: 1px solid #e2e8f0; transition: all 0.3s ease; }
+        .channel-card:hover { transform: translateY(-4px); box-shadow: 0 12px 20px rgba(0,0,0,0.05); }
 
-.chat-wrap{display:flex;flex-direction:column;height:calc(100vh - 230px);}
-.chat-messages{flex:1;overflow-y:auto;padding:10px 4px;}
-.chat-msg{display:flex;gap:10px;margin-bottom:16px;align-items:flex-start;}
-.chat-msg .bubble{background:#f1f5f9;padding:10px 14px;border-radius:12px;max-width:75%;font-size:.9rem;}
-.chat-msg .sender{font-weight:700;font-size:.8rem;margin-bottom:3px;color:var(--primary);}
-.chat-msg .ts{font-size:.68rem;color:var(--text-muted);margin-top:4px;}
-.mention-tag{background:rgba(37,99,235,.15);color:var(--primary);padding:1px 4px;border-radius:4px;font-weight:600;}
-.chat-input-row{display:flex;gap:8px;align-items:center;border-top:1px solid #e2e8f0;padding-top:12px;position:relative;}
-.chat-input-row textarea{resize:none;max-height:100px;}
-.icon-btn{background:#f1f5f9;border:none;border-radius:8px;padding:10px;cursor:pointer;color:var(--text-muted);font-size:1rem;}
-.icon-btn:hover{background:#e2e8f0;color:var(--primary);}
-.mention-dropdown{position:absolute;bottom:100%;left:0;background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.1);width:240px;max-height:200px;overflow-y:auto;margin-bottom:6px;}
-.mention-item{padding:8px 12px;display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.85rem;}
-.mention-item:hover{background:#f1f5f9;}
-.chat-media img,.chat-media video{max-width:220px;border-radius:8px;display:block;}
+        /* Toasts */
+        #toast-container { position: fixed; bottom: 30px; right: 30px; z-index: 9999; }
+        .toast { background: white; color: var(--text-main); padding: 16px 24px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); margin-top: 10px; display: flex; align-items: center; gap: 12px; min-width: 300px; border-left: 4px solid var(--primary); animation: slideInRight 0.3s ease-out forwards; }
+        .toast.success { border-color: var(--success); }
+        .toast.error { border-color: var(--error); }
 
-.switch-container{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
-.toggle-switch{position:relative;display:inline-block;width:50px;height:26px;flex-shrink:0;}
-.toggle-switch input{opacity:0;width:0;height:0;}
-.slider{position:absolute;cursor:pointer;inset:0;background:#cbd5e1;transition:.4s;border-radius:34px;}
-.slider:before{position:absolute;content:"";height:18px;width:18px;left:4px;bottom:4px;background:#fff;transition:.4s;border-radius:50%;}
-input:checked + .slider{background:var(--primary);}
-input:checked + .slider:before{transform:translateX(24px);}
+        /* User Header Layout */
+        .user-menu-block { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+        .user-display-name { font-weight: 600; color: var(--text-main); font-size: 0.95rem; }
+        .btn-logout { background: #fee2e2; color: #b91c1c; padding: 6px 14px; font-size: 0.8rem; border-radius: 6px; }
+        .btn-logout:hover { background: #fecaca; }
 
-.recording-indicator{display:flex;align-items:center;gap:8px;color:var(--error);font-weight:600;font-size:.85rem;}
-.rec-dot{width:10px;height:10px;background:var(--error);border-radius:50%;animation:pulseDot 1s infinite;}
-@keyframes pulseDot{0%,100%{opacity:1;}50%{opacity:.3;}}
-
-.app-layout{display:flex;}
-.main-content{flex:1;min-height:calc(100vh - 70px);}
-.ws-header{padding:20px 25px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;gap:12px;}
-.ws-body{padding:20px 25px;}
-
-@media(max-width:768px){
-  :root{--sidebar-width:270px;}
-  .auth-container{margin:40px 15px;padding:25px;}
-}
-</style>
+        /* Animations */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        
+        .fade-in { animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    </style>
 </head>
 <body>
 
-<div id="toast-container"></div>
-<div class="drawer-overlay" id="drawer-overlay" onclick="closeAllDrawers()"></div>
+    <div id="toast-container"></div>
 
-<!-- ================= NAV ================= -->
-<nav>
-  <div style="display:flex;align-items:center;gap:15px;">
-    <div class="hamburger-menu" id="hamburger" onclick="openSidebar()"><i class="fas fa-bars"></i></div>
-    <div class="logo"><i class="fas fa-people-arrows"></i> Synchronous</div>
-  </div>
-  <div id="nav-user" class="hidden" style="display:flex;align-items:center;gap:15px;">
-    <span id="top-user-name" style="font-weight:600;cursor:pointer;" onclick="openProfileSidebar()"></span>
-    <img id="top-user-pfp" class="avatar-sm" style="cursor:pointer;" onclick="openProfileSidebar()">
-    <button class="btn" style="padding:8px 14px;background:#fee2e2;color:#b91c1c;" onclick="logout()"><i class="fas fa-sign-out-alt"></i></button>
-  </div>
-</nav>
+    <!-- Mandatory Profile Completion Drawer -->
+    <div class="drawer-overlay" id="forced-overlay"></div>
+    <div class="forced-drawer" id="forced-drawer">
+        <h2 style="margin-bottom: 10px;"><i class="fas fa-user-edit" style="color: var(--primary);"></i> Complete Your Profile</h2>
+        <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 25px;">You must set up your user identification configuration profile credentials before entering the Synchronous workspaces.</p>
+        
+        <div class="avatar-container">
+            <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80" class="avatar-preview" id="setup-avatar-preview">
+            <input type="file" id="setup-avatar-input" accept="image/*" style="display: none;">
+            <button class="btn" style="background: #e2e8f0; font-size: 0.8rem; padding: 6px 12px;" onclick="document.getElementById('setup-avatar-input').click()"><i class="fas fa-camera"></i> Change Photo</button>
+        </div>
 
-<!-- ================= AUTH ================= -->
-<div id="auth-section" class="auth-container fade-in">
-  <h2 id="auth-title" style="text-align:center;margin-bottom:5px;">Welcome Back!</h2>
-  <p style="text-align:center;color:var(--text-muted);font-size:.9rem;margin-bottom:25px;">Sign in to Synchronous</p>
+        <div class="input-group">
+            <label>Display Name</label>
+            <input type="text" id="setup-display-name" placeholder="John Doe">
+        </div>
+        <div class="input-group">
+            <label>Description / Bio</label>
+            <textarea id="setup-bio" rows="4" placeholder="Tell the workspace team about yourself..."></textarea>
+        </div>
+        
+        <button class="btn btn-primary" style="margin-top: 15px;" id="setup-save-btn" onclick="saveForcedProfile()">
+            <i class="fas fa-save"></i> Save Profile Data
+        </button>
+    </div>
 
-  <div class="input-group"><label>Email Address</label><input type="email" id="email" placeholder="name@domain.com"></div>
-  <div class="input-group"><label>Password</label><input type="password" id="password" placeholder="••••••••"></div>
+    <!-- Editable Sidebar Left Menu (Triggers after setup completion) -->
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+    <div class="sidebar" id="sidebar">
+        <h2 style="margin-bottom: 15px;"><i class="fas fa-sliders-h"></i> Profile Settings</h2>
+        <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 25px;">Modify your identity profile information data across Synchronous.</p>
+        <hr style="opacity: 0.1; margin-bottom: 20px;">
 
-  <button id="auth-btn" class="btn btn-primary" onclick="handleAuth()">Login</button>
+        <div class="avatar-container">
+            <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80" class="avatar-preview" id="edit-avatar-preview">
+            <input type="file" id="edit-avatar-input" accept="image/*" style="display: none;">
+            <button class="btn" style="background: #e2e8f0; font-size: 0.8rem; padding: 6px 12px;" onclick="document.getElementById('edit-avatar-input').click()"><i class="fas fa-camera"></i> Update Photo</button>
+        </div>
 
-  <div class="experimental-warning">
-    <i class="fas fa-exclamation-triangle" style="margin-top:2px;"></i>
-    <span>Email and password login or signup is completely experimental, if you want stability and speed, use Google authentication.</span>
-  </div>
+        <div class="input-group">
+            <label>Display Name</label>
+            <input type="text" id="edit-display-name">
+        </div>
+        <div class="input-group">
+            <label>Description / Bio</label>
+            <textarea id="edit-bio" rows="4"></textarea>
+        </div>
 
-  <button class="btn btn-google" onclick="handleGoogleAuth()">
-    <img src="https://fonts.gstatic.com/s/i/productlogos/googleg/v6/24px.svg" alt="G" style="width:18px;"> Continue with Google
-  </button>
+        <button class="btn btn-primary" style="margin-top: 10px;" id="edit-save-btn" onclick="saveSidebarProfile()">
+            <i class="fas fa-check-circle"></i> Update Identity
+        </button>
+    </div>
 
-  <button id="forgot-password-btn" class="btn btn-secondary" style="margin-top:10px;" onclick="handleForgotPassword()">Forgot Password</button>
+    <!-- Navigation Header -->
+    <nav>
+        <div class="logo" id="nav-logo" onclick="handleLogoClick()">
+            <i class="fas fa-bars" id="menu-bar-icon" style="margin-right: 15px; color: var(--text-muted); font-size: 1.2rem; cursor: not-allowed; opacity: 0.5;"></i>
+            <i class="fas fa-sync-alt" style="margin-right: 8px; font-size: 1.4rem;"></i> Synchronous
+        </div>
+        <div id="nav-user" class="hidden">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <img src="" id="nav-avatar-img" class="nav-avatar">
+                <div class="user-menu-block">
+                    <span id="user-name-display" class="user-display-name">Loading...</span>
+                    <button class="btn btn-logout" onclick="logout()">Logout</button>
+                </div>
+            </div>
+        </div>
+    </nav>
 
-  <p style="text-align:center;margin-top:20px;">
-    <a href="#" id="auth-toggle-link" onclick="toggleAuthMode()" style="color:var(--primary);text-decoration:none;font-weight:600;">
-      <span id="auth-toggle-text">New to the app? What are you even waiting for? Sign up now!</span>
-    </a>
-  </p>
-</div>
+    <!-- AUTH SECTION: SIGNIN CONTROLLER -->
+    <div id="login-section" class="auth-container fade-in hidden">
+        <h2 style="margin-bottom: 5px;">Welcome Back!</h2>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 25px;">Log in to access your secure shared operational team environment</p>
+        
+        <div class="input-group">
+            <label>Email Address</label>
+            <input type="email" id="login-email" placeholder="you@company.com">
+        </div>
+        <div class="input-group">
+            <label>Password</label>
+            <input type="password" id="login-password" placeholder="••••••••">
+        </div>
+        
+        <button class="btn btn-primary" onclick="handleEmailLogin()">Sign In</button>
+        
+        <div class="disclaimer-box">
+            Email and password login or signup is completely experimental, if you want stability and speed. Use Google authentication
+        </div>
 
-<!-- ================= MANDATORY PROFILE DRAWER ================= -->
-<div class="profile-drawer" id="mandatory-profile-drawer">
-  <h2 style="margin-bottom:10px;"><i class="fas fa-user-edit"></i> Complete your profile</h2>
-  <p style="color:var(--text-muted);font-size:.85rem;margin-bottom:20px;">You must fill in all the details below before you can use Synchronous.</p>
-  <hr style="opacity:.1;margin-bottom:20px;">
-  <div class="pfp-container">
-    <img id="mandatory-pfp-view" class="pfp-preview" src="https://www.w3schools.com/howto/img_avatar.png">
-    <input type="file" id="mandatory-pfp-input" accept="image/*" style="display:none;">
-    <button class="btn" style="padding:6px 12px;font-size:.8rem;background:#e2e8f0;" onclick="document.getElementById('mandatory-pfp-input').click()">Choose Profile Picture</button>
-  </div>
-  <div class="input-group"><label>Display Name</label><input type="text" id="mandatory-display-name" placeholder="John Doe"></div>
-  <div class="input-group"><label>Description</label><textarea id="mandatory-description" rows="3" placeholder="Tell us about yourself..."></textarea></div>
-  <button class="btn btn-primary" onclick="saveMandatoryProfile()">Save</button>
-</div>
+        <button class="btn btn-google" onclick="handleGoogleAuth()">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google logo" style="width: 18px; height: 18px;">
+            Continue with Google
+        </button>
 
-<!-- ================= PROFILE / APP SIDEBAR (settings, right side quick) ================= -->
-<div class="right-drawer" id="profile-sidebar">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-    <h2><i class="fas fa-user"></i> Your Profile</h2>
-    <button class="btn" style="padding:8px;background:rgba(0,0,0,.05);border-radius:50%;" onclick="closeAllDrawers()"><i class="fas fa-times"></i></button>
-  </div>
-  <div class="pfp-container">
-    <img id="settings-pfp-view" class="pfp-preview" src="">
-    <input type="file" id="settings-pfp-input" accept="image/*" style="display:none;">
-    <button class="btn" style="padding:6px 12px;font-size:.8rem;background:#e2e8f0;" onclick="document.getElementById('settings-pfp-input').click()">Change Picture</button>
-  </div>
-  <div class="input-group"><label>Display Name</label><input type="text" id="settings-display-name"></div>
-  <div class="input-group"><label>Description</label><textarea id="settings-description" rows="3"></textarea></div>
-  <button class="btn btn-primary" onclick="saveSettingsProfile()">Save Updates</button>
-</div>
-
-<!-- ================= MAIN SIDEBAR (workspaces) ================= -->
-<div class="sidebar" id="main-sidebar">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-    <h2><i class="fas fa-layer-group"></i> Workspaces</h2>
-    <button class="btn" style="padding:8px;background:rgba(0,0,0,.05);border-radius:50%;" onclick="closeAllDrawers()"><i class="fas fa-times"></i></button>
-  </div>
-  <button class="btn btn-primary" style="margin-bottom:8px;" onclick="openCreateWorkspaceModal()"><i class="fas fa-plus"></i> Create workspace</button>
-  <button class="btn btn-secondary" style="margin-bottom:20px;" onclick="openJoinWorkspaceModal()"><i class="fas fa-sign-in-alt"></i> Join workspace</button>
-  <hr style="opacity:.1;margin-bottom:16px;">
-  <div id="sidebar-ws-list"></div>
-</div>
-
-<!-- ================= CREATE WORKSPACE DRAWER ================= -->
-<div class="right-drawer" id="create-ws-drawer">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-    <h2><i class="fas fa-plus-circle"></i> Create workspace</h2>
-    <button class="btn" style="padding:8px;background:rgba(0,0,0,.05);border-radius:50%;" onclick="closeAllDrawers()"><i class="fas fa-times"></i></button>
-  </div>
-  <div class="pfp-container">
-    <img id="ws-icon-view" class="pfp-preview" style="border-radius:14px;" src="https://placehold.co/100x100/e2e8f0/64748b?text=Icon">
-    <input type="file" id="ws-icon-input" accept="image/*" style="display:none;">
-    <button class="btn" style="padding:6px 12px;font-size:.8rem;background:#e2e8f0;" onclick="document.getElementById('ws-icon-input').click()">Choose Workspace Icon</button>
-  </div>
-  <div class="input-group"><label>Workspace Name</label><input type="text" id="ws-name-input" placeholder="Team Rocket"></div>
-  <div class="input-group"><label>Description</label><textarea id="ws-desc-input" rows="3" placeholder="What's this workspace for?"></textarea></div>
-  <button class="btn btn-primary" onclick="createWorkspace()">Create workspace</button>
-</div>
-
-<!-- ================= JOIN WORKSPACE DRAWER ================= -->
-<div class="right-drawer" id="join-ws-drawer">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-    <h2><i class="fas fa-sign-in-alt"></i> Join workspace</h2>
-    <button class="btn" style="padding:8px;background:rgba(0,0,0,.05);border-radius:50%;" onclick="closeAllDrawers()"><i class="fas fa-times"></i></button>
-  </div>
-  <div class="input-group"><label>6-digit workspace code</label><input type="text" id="join-code-input" maxlength="6" placeholder="482913"></div>
-  <button class="btn btn-primary" onclick="joinWorkspaceByCode()">Join</button>
-</div>
-
-<!-- ================= MAIN APP LAYOUT ================= -->
-<div id="app-layout" class="app-layout hidden">
-  <div class="main-content" id="main-content">
-    <div class="main-empty" id="empty-state">Open the sidebar to start collaborating</div>
-    <div id="workspace-view" class="hidden"></div>
-  </div>
-</div>
-
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getDatabase, ref, set, push, get, onValue, update, remove, onDisconnect, child } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyCzV75WoXRkbX9Davc_3Vr853Gvej1WEww",
-  authDomain: "serverfluxionary.firebaseapp.com",
-  databaseURL: "https://serverfluxionary-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "serverfluxionary",
-  storageBucket: "serverfluxionary.firebasestorage.app",
-  messagingSenderId: "693102090542",
-  appId: "1:693102090542:web:59298f926dd0257ce682bf"
-};
-const cloudinaryConfig = { cloudName: "dufbzl68g", uploadPreset: "ml_default" };
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getDatabase(app);
-const googleProvider = new GoogleAuthProvider();
-
-let isLoginMode = true;
-let currentUserProfile = null;
-let mandatoryPfpUrl = "https://www.w3schools.com/howto/img_avatar.png";
-let settingsPfpUrl = "";
-let wsIconUrl = "";
-let activeWorkspaceId = null;
-let activeWorkspaceUnsubs = [];
-let mediaRecorder = null, recordedChunks = [], recordStartTime = null, recordTimerInterval = null;
-
-// ---------- helpers ----------
-window.showToast = (msg, type='success') => {
-  const c = document.getElementById('toast-container');
-  const t = document.createElement('div');
-  t.className = `toast ${type}`;
-  const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle';
-  t.innerHTML = `<i class="fas ${icon}" style="color:var(--${type})"></i><span>${msg}</span>`;
-  c.appendChild(t);
-  setTimeout(()=>t.remove(), 5000);
-};
-
-async function uploadToCloudinary(file, resourceType='auto') {
-  const formData = new FormData();
-  formData.append('file', file);
-  formData.append('upload_preset', cloudinaryConfig.uploadPreset);
-  try {
-    const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudinaryConfig.cloudName}/${resourceType}/upload`, { method:'POST', body: formData });
-    const data = await res.json();
-    if (data.secure_url) return data.secure_url;
-    showToast("Upload failed: " + (data.error ? data.error.message : 'unknown error'), 'error');
-    return null;
-  } catch(err) {
-    showToast("Upload failed due to a network issue", 'error');
-    return null;
-  }
-}
-
-function gen6DigitCode(){ return String(Math.floor(100000 + Math.random()*900000)); }
-
-// ---------- drawers ----------
-window.closeAllDrawers = () => {
-  if (auth.currentUser && (!currentUserProfile || !currentUserProfile.profileCompleted)) {
-    showToast("Please complete your profile first", "error");
-    return;
-  }
-  ['main-sidebar','profile-sidebar','create-ws-drawer','join-ws-drawer'].forEach(id=>document.getElementById(id).classList.remove('active'));
-  document.getElementById('mandatory-profile-drawer').classList.remove('active');
-  document.getElementById('drawer-overlay').classList.remove('active');
-};
-window.openSidebar = () => {
-  if (!auth.currentUser) return;
-  document.getElementById('main-sidebar').classList.add('active');
-  document.getElementById('drawer-overlay').classList.add('active');
-};
-window.openProfileSidebar = () => {
-  if (!auth.currentUser) return;
-  document.getElementById('settings-display-name').value = currentUserProfile?.displayName || '';
-  document.getElementById('settings-description').value = currentUserProfile?.description || '';
-  const pic = currentUserProfile?.profilePic || 'https://www.w3schools.com/howto/img_avatar.png';
-  document.getElementById('settings-pfp-view').src = pic;
-  settingsPfpUrl = currentUserProfile?.profilePic || '';
-  document.getElementById('profile-sidebar').classList.add('active');
-  document.getElementById('drawer-overlay').classList.add('active');
-};
-window.openCreateWorkspaceModal = () => {
-  document.getElementById('ws-name-input').value='';
-  document.getElementById('ws-desc-input').value='';
-  document.getElementById('ws-icon-view').src='https://placehold.co/100x100/e2e8f0/64748b?text=Icon';
-  wsIconUrl='';
-  document.getElementById('create-ws-drawer').classList.add('active');
-  document.getElementById('drawer-overlay').classList.add('active');
-};
-window.openJoinWorkspaceModal = () => {
-  document.getElementById('join-code-input').value='';
-  document.getElementById('join-ws-drawer').classList.add('active');
-  document.getElementById('drawer-overlay').classList.add('active');
-};
-
-// ---------- auth ----------
-window.toggleAuthMode = () => {
-  isLoginMode = !isLoginMode;
-  document.getElementById('auth-title').innerText = isLoginMode ? "Welcome Back!" : "Create Account";
-  document.getElementById('auth-toggle-text').innerText = isLoginMode ? "New to the app? What are you even waiting for? Sign up now!" : "Already have an account? Login instead.";
-  document.getElementById('auth-btn').innerText = isLoginMode ? "Login" : "Sign Up";
-  document.getElementById('forgot-password-btn').classList.toggle('hidden', !isLoginMode);
-};
-
-window.handleAuth = async () => {
-  const email = document.getElementById('email').value.trim();
-  const pass = document.getElementById('password').value;
-  if (!email || !pass) return showToast("Please enter both email and password", "error");
-  try {
-    if (isLoginMode) {
-      await signInWithEmailAndPassword(auth, email, pass);
-      showToast("Logged in successfully");
-    } else {
-      await createUserWithEmailAndPassword(auth, email, pass);
-      showToast("Account created successfully");
-    }
-  } catch (err) { showToast(err.message, "error"); }
-};
-
-window.handleGoogleAuth = async () => {
-  try { await signInWithPopup(auth, googleProvider); showToast("Authenticated via Google"); }
-  catch (err) { showToast(err.message, "error"); }
-};
-
-window.handleForgotPassword = async () => {
-  const email = document.getElementById('email').value.trim();
-  if (!email) return showToast("Enter your email above first", "error");
-  try { await sendPasswordResetEmail(auth, email); showToast("Password reset email sent"); }
-  catch (err) { showToast(err.message, "error"); }
-};
-
-window.logout = () => {
-  const user = auth.currentUser;
-  detachWorkspaceListeners();
-  if (user) {
-    update(ref(db, `users/${user.uid}`), { online:false }).finally(()=> signOut(auth).then(()=>window.location.reload()));
-  } else { signOut(auth).then(()=>window.location.reload()); }
-};
-
-// ---------- profile pic uploads ----------
-document.getElementById('mandatory-pfp-input').addEventListener('change', async (e)=>{
-  const file = e.target.files[0]; if(!file) return;
-  const url = await uploadToCloudinary(file, 'image');
-  if (url) { mandatoryPfpUrl = url; document.getElementById('mandatory-pfp-view').src = url; }
-});
-document.getElementById('settings-pfp-input').addEventListener('change', async (e)=>{
-  const file = e.target.files[0]; if(!file) return;
-  const url = await uploadToCloudinary(file, 'image');
-  if (url) { settingsPfpUrl = url; document.getElementById('settings-pfp-view').src = url; }
-});
-document.getElementById('ws-icon-input').addEventListener('change', async (e)=>{
-  const file = e.target.files[0]; if(!file) return;
-  const url = await uploadToCloudinary(file, 'image');
-  if (url) { wsIconUrl = url; document.getElementById('ws-icon-view').src = url; }
-});
-
-window.saveMandatoryProfile = async () => {
-  const user = auth.currentUser; if(!user) return;
-  const dName = document.getElementById('mandatory-display-name').value.trim();
-  const desc = document.getElementById('mandatory-description').value.trim();
-  if (!dName || !desc) return showToast("All fields are required", "error");
-  await update(ref(db, `users/${user.uid}`), {
-    displayName:dName, description:desc, profilePic:mandatoryPfpUrl, profileCompleted:true, email:user.email
-  });
-  showToast("Profile saved!");
-};
-
-window.saveSettingsProfile = async () => {
-  const user = auth.currentUser; if(!user) return;
-  const dName = document.getElementById('settings-display-name').value.trim();
-  const desc = document.getElementById('settings-description').value.trim();
-  if (!dName || !desc) return showToast("All fields are required", "error");
-  await update(ref(db, `users/${user.uid}`), { displayName:dName, description:desc, profilePic: settingsPfpUrl || mandatoryPfpUrl });
-  showToast("Profile updated");
-  closeAllDrawers();
-};
-
-// ---------- auth state ----------
-onAuthStateChanged(auth, (user) => {
-  if (user) {
-    document.getElementById('auth-section').classList.add('hidden');
-    const presenceRef = ref(db, `users/${user.uid}/online`);
-    set(presenceRef, true);
-    onDisconnect(presenceRef).set(false);
-
-    onValue(ref(db, `users/${user.uid}`), (snap) => {
-      const profile = snap.val();
-      currentUserProfile = profile;
-      if (!profile || !profile.profileCompleted) {
-        document.getElementById('mandatory-profile-drawer').classList.add('active');
-        document.getElementById('drawer-overlay').classList.add('active');
-        document.getElementById('app-layout').classList.add('hidden');
-        document.getElementById('nav-user').classList.add('hidden');
-      } else {
-        document.getElementById('mandatory-profile-drawer').classList.remove('active');
-        if (![...document.querySelectorAll('.right-drawer,.sidebar')].some(d=>d.classList.contains('active'))) {
-          document.getElementById('drawer-overlay').classList.remove('active');
-        }
-        document.getElementById('nav-user').classList.remove('hidden');
-        document.getElementById('top-user-name').innerText = profile.displayName;
-        document.getElementById('top-user-pfp').src = profile.profilePic;
-        document.getElementById('app-layout').classList.remove('hidden');
-        loadSidebarWorkspaces(user.uid);
-        watchMyMentions(user.uid);
-      }
-    });
-  } else {
-    document.getElementById('auth-section').classList.remove('hidden');
-    document.getElementById('app-layout').classList.add('hidden');
-    document.getElementById('nav-user').classList.add('hidden');
-    closeAllDrawers();
-  }
-});
-
-// ---------- workspace: create ----------
-window.createWorkspace = async () => {
-  const user = auth.currentUser; if(!user) return;
-  const name = document.getElementById('ws-name-input').value.trim();
-  const desc = document.getElementById('ws-desc-input').value.trim();
-  if (!name) return showToast("Workspace name is required", "error");
-  const icon = wsIconUrl || 'https://placehold.co/100x100/2563eb/ffffff?text=' + encodeURIComponent(name[0].toUpperCase());
-  const code = gen6DigitCode();
-  const wsRef = push(ref(db, 'workspaces'));
-  const wsId = wsRef.key;
-  await set(wsRef, {
-    name, description:desc, icon, code, ownerUid:user.uid,
-    adminApprovalEnabled:false, createdAt:new Date().toISOString()
-  });
-  await set(ref(db, `workspaceCodes/${code}`), wsId);
-  await set(ref(db, `workspaces/${wsId}/members/${user.uid}`), {
-    displayName: currentUserProfile.displayName, profilePic: currentUserProfile.profilePic, tag:'', joinedAt:new Date().toISOString()
-  });
-  await set(ref(db, `users/${user.uid}/workspaces/${wsId}`), true);
-  showToast("Workspace created!");
-  closeAllDrawers();
-  openWorkspace(wsId);
-};
-
-// ---------- workspace: join ----------
-window.joinWorkspaceByCode = async () => {
-  const user = auth.currentUser; if(!user) return;
-  const code = document.getElementById('join-code-input').value.trim();
-  if (code.length !== 6) return showToast("Enter a valid 6-digit code", "error");
-  const codeSnap = await get(ref(db, `workspaceCodes/${code}`));
-  if (!codeSnap.exists()) { showToast("It seems to be that this workspace doesn't exist in our database", "error"); return; }
-  const wsId = codeSnap.val();
-  const wsSnap = await get(ref(db, `workspaces/${wsId}`));
-  const ws = wsSnap.val();
-  if (!ws) { showToast("It seems to be that this workspace doesn't exist in our database", "error"); return; }
-
-  const memberSnap = await get(ref(db, `workspaces/${wsId}/members/${user.uid}`));
-  if (memberSnap.exists()) { showToast("You're already a member of this workspace"); closeAllDrawers(); openWorkspace(wsId); return; }
-
-  if (ws.adminApprovalEnabled) {
-    await set(ref(db, `workspaces/${wsId}/pendingRequests/${user.uid}`), {
-      uid:user.uid, displayName:currentUserProfile.displayName, profilePic:currentUserProfile.profilePic, requestedAt:new Date().toISOString()
-    });
-    showToast("Request sent successfully");
-  } else {
-    await set(ref(db, `workspaces/${wsId}/members/${user.uid}`), {
-      displayName: currentUserProfile.displayName, profilePic: currentUserProfile.profilePic, tag:'', joinedAt:new Date().toISOString()
-    });
-    await set(ref(db, `users/${user.uid}/workspaces/${wsId}`), true);
-    showToast(`Joined ${ws.name}!`);
-    openWorkspace(wsId);
-  }
-  closeAllDrawers();
-};
-
-// ---------- sidebar workspace list ----------
-function loadSidebarWorkspaces(uid) {
-  onValue(ref(db, `users/${uid}/workspaces`), (snap) => {
-    const ids = snap.val() ? Object.keys(snap.val()) : [];
-    const container = document.getElementById('sidebar-ws-list');
-    container.innerHTML = '';
-    if (ids.length === 0) {
-      container.innerHTML = `<p style="color:var(--text-muted);font-size:.85rem;text-align:center;padding:20px 0;">No workspaces yet</p>`;
-      return;
-    }
-    ids.forEach(wsId => {
-      onValue(ref(db, `workspaces/${wsId}`), (wsSnap) => {
-        const ws = wsSnap.val();
-        if (!ws) return;
-        let item = document.getElementById('sb-ws-' + wsId);
-        if (!item) {
-          item = document.createElement('div');
-          item.id = 'sb-ws-' + wsId;
-          item.className = 'ws-list-item';
-          container.appendChild(item);
-        }
-        item.className = 'ws-list-item' + (activeWorkspaceId === wsId ? ' active-ws' : '');
-        item.onclick = () => { openWorkspace(wsId); openSidebar(); };
-        item.innerHTML = `<img class="ws-icon" src="${ws.icon}"><div style="overflow:hidden;"><div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${ws.name}</div><div style="font-size:.75rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${ws.description||''}</div></div>`;
-      });
-    });
-  });
-}
-
-// ---------- mentions watcher ----------
-function watchMyMentions(uid) {
-  onValue(ref(db, `users/${uid}/mentions`), (snap) => {
-    const data = snap.val(); if (!data) return;
-    Object.keys(data).forEach(mid => {
-      const m = data[mid];
-      if (!m.seen) {
-        showToast(`You got mentioned by ${m.fromDisplayName} in the workspace ${m.workspaceName} at exactly ${m.timestamp}`);
-        update(ref(db, `users/${uid}/mentions/${mid}`), { seen:true });
-      }
-    });
-  });
-}
-
-function detachWorkspaceListeners() {
-  activeWorkspaceUnsubs.forEach(fn => { try { fn(); } catch(e){} });
-  activeWorkspaceUnsubs = [];
-}
-
-// ================= WORKSPACE VIEW =================
-window.openWorkspace = async (wsId) => {
-  detachWorkspaceListeners();
-  activeWorkspaceId = wsId;
-  document.getElementById('empty-state').classList.add('hidden');
-  const view = document.getElementById('workspace-view');
-  view.classList.remove('hidden');
-
-  const wsSnap = await get(ref(db, `workspaces/${wsId}`));
-  const ws = wsSnap.val();
-  if (!ws) { showToast("Workspace not found", "error"); return; }
-  const user = auth.currentUser;
-  const isAdmin = ws.ownerUid === user.uid;
-
-  view.innerHTML = `
-    <div class="ws-header">
-      <div style="display:flex;align-items:center;gap:14px;">
-        <img class="ws-icon" src="${ws.icon}" style="width:52px;height:52px;">
         <div>
-          <div style="font-weight:800;font-size:1.3rem;">${ws.name}</div>
-          <div style="font-size:.85rem;color:var(--text-muted);">${ws.description||''}</div>
+            <button class="btn btn-link" onclick="handleForgotPassword()">Forgot Password?</button>
         </div>
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button class="btn btn-secondary" style="width:auto;" onclick="openInviteDrawer('${wsId}')"><i class="fas fa-user-plus"></i> Invite</button>
-        ${isAdmin ? `<button class="btn btn-secondary" style="width:auto;" onclick="openConfigureDrawer('${wsId}')"><i class="fas fa-cog"></i> Configure</button>` : ''}
-      </div>
+        
+        <hr style="margin: 20px 0; opacity: 0.1;">
+        
+        <button class="btn btn-link" style="color: var(--primary); font-weight: 600;" onclick="switchAuthView('signup')">
+            New to the app? What are you even waiting for? Sign up now!
+        </button>
     </div>
-    <div class="ws-body">
-      <div class="tab-bar">
-        <button class="tab-btn active" data-tab="members" onclick="switchWsTab('members')"><i class="fas fa-users"></i> Members</button>
-        <button class="tab-btn" data-tab="whiteboard" onclick="switchWsTab('whiteboard')"><i class="fas fa-chalkboard"></i> Whiteboard</button>
-        <button class="tab-btn" data-tab="notes" onclick="switchWsTab('notes')"><i class="fas fa-sticky-note"></i> Shared Notes</button>
-        <button class="tab-btn" data-tab="chat" onclick="switchWsTab('chat')"><i class="fas fa-comments"></i> Chat</button>
-      </div>
-      <div id="ws-tab-content"></div>
-    </div>
-  `;
-  window.switchWsTab('members');
-};
 
-window.switchWsTab = (tab) => {
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
-  detachWorkspaceListeners();
-  const content = document.getElementById('ws-tab-content');
-  if (tab === 'members') renderMembersTab(content);
-  else if (tab === 'whiteboard') renderWhiteboardTab(content);
-  else if (tab === 'notes') renderNotesTab(content);
-  else if (tab === 'chat') renderChatTab(content);
-};
-
-// ---------- INVITE DRAWER ----------
-window.openInviteDrawer = async (wsId) => {
-  const wsSnap = await get(ref(db, `workspaces/${wsId}`));
-  const ws = wsSnap.val();
-  const drawer = document.createElement('div');
-  drawer.className = 'right-drawer active';
-  drawer.id = 'dynamic-invite-drawer';
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(ws.code)}`;
-  drawer.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-      <h2><i class="fas fa-user-plus"></i> Invite to ${ws.name}</h2>
-      <button class="btn" style="padding:8px;background:rgba(0,0,0,.05);border-radius:50%;" onclick="this.closest('.right-drawer').remove(); closeAllDrawers();"><i class="fas fa-times"></i></button>
-    </div>
-    <div class="card" style="text-align:center;">
-      <div style="font-size:.85rem;color:var(--text-muted);margin-bottom:8px;">6-digit workspace code</div>
-      <div style="font-size:2rem;font-weight:800;letter-spacing:6px;color:var(--primary);">${ws.code}</div>
-    </div>
-    <button class="btn btn-primary" style="margin-bottom:10px;" onclick="copyInviteLink('${ws.name.replace(/'/g,"\\'")}', '${(currentUserProfile.displayName||'').replace(/'/g,"\\'")}', '${ws.code}')"><i class="fas fa-link"></i> Invite by link</button>
-    <div class="card" style="text-align:center;">
-      <div style="font-size:.85rem;color:var(--text-muted);margin-bottom:10px;">Invite by QR</div>
-      <img src="${qrUrl}" style="border-radius:8px;">
-    </div>
-  `;
-  document.body.appendChild(drawer);
-  document.getElementById('drawer-overlay').classList.add('active');
-};
-
-window.copyInviteLink = (wsName, inviterName, code) => {
-  const link = `${window.location.origin}${window.location.pathname}?join=${code}`;
-  const msg = `${inviterName} wants to invite you to ${wsName} on Synchronous!\n${link}`;
-  navigator.clipboard.writeText(msg).then(()=> showToast("Invite message copied to clipboard!"));
-};
-
-// ---------- CONFIGURE DRAWER ----------
-window.openConfigureDrawer = async (wsId) => {
-  const wsSnap = await get(ref(db, `workspaces/${wsId}`));
-  const ws = wsSnap.val();
-  const drawer = document.createElement('div');
-  drawer.className = 'right-drawer active';
-  drawer.id = 'dynamic-configure-drawer';
-  drawer.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-      <h2><i class="fas fa-cog"></i> Configure workspace</h2>
-      <button class="btn" style="padding:8px;background:rgba(0,0,0,.05);border-radius:50%;" onclick="this.closest('.right-drawer').remove(); closeAllDrawers();"><i class="fas fa-times"></i></button>
-    </div>
-    <div class="pfp-container">
-      <img id="cfg-icon-view" class="pfp-preview" style="border-radius:14px;" src="${ws.icon}">
-      <input type="file" id="cfg-icon-input" accept="image/*" style="display:none;">
-      <button class="btn" style="padding:6px 12px;font-size:.8rem;background:#e2e8f0;" onclick="document.getElementById('cfg-icon-input').click()">Change Icon</button>
-    </div>
-    <div class="input-group"><label>Workspace Name</label><input type="text" id="cfg-name" value="${ws.name}"></div>
-    <div class="input-group"><label>Description</label><textarea id="cfg-desc" rows="3">${ws.description||''}</textarea></div>
-    <div class="switch-container">
-      <div><strong>Only admins accept new members</strong><div style="font-size:.8rem;color:var(--text-muted);">Requires approval for join requests</div></div>
-      <label class="toggle-switch"><input type="checkbox" id="cfg-approval" ${ws.adminApprovalEnabled?'checked':''}><span class="slider"></span></label>
-    </div>
-    <button class="btn btn-primary" style="margin-bottom:12px;" onclick="saveWsConfig('${wsId}')">Save changes</button>
-    <button class="btn btn-danger" style="width:100%;" onclick="deleteWorkspace('${wsId}')"><i class="fas fa-trash"></i> Delete workspace</button>
-  `;
-  document.body.appendChild(drawer);
-  document.getElementById('drawer-overlay').classList.add('active');
-  let cfgIconUrl = ws.icon;
-  document.getElementById('cfg-icon-input').addEventListener('change', async (e) => {
-    const file = e.target.files[0]; if (!file) return;
-    const url = await uploadToCloudinary(file, 'image');
-    if (url) { cfgIconUrl = url; document.getElementById('cfg-icon-view').src = url; }
-  });
-  window.saveWsConfig = async (wsId) => {
-    await update(ref(db, `workspaces/${wsId}`), {
-      name: document.getElementById('cfg-name').value.trim(),
-      description: document.getElementById('cfg-desc').value.trim(),
-      icon: cfgIconUrl,
-      adminApprovalEnabled: document.getElementById('cfg-approval').checked
-    });
-    showToast("Workspace updated");
-    drawer.remove();
-    closeAllDrawers();
-    openWorkspace(wsId);
-  };
-};
-
-window.deleteWorkspace = async (wsId) => {
-  if (!confirm("Delete this workspace permanently? This cannot be undone.")) return;
-  const wsSnap = await get(ref(db, `workspaces/${wsId}`));
-  const ws = wsSnap.val();
-  const membersSnap = await get(ref(db, `workspaces/${wsId}/members`));
-  const members = membersSnap.val() || {};
-  for (const uid of Object.keys(members)) {
-    await remove(ref(db, `users/${uid}/workspaces/${wsId}`));
-  }
-  if (ws && ws.code) await remove(ref(db, `workspaceCodes/${ws.code}`));
-  await remove(ref(db, `workspaces/${wsId}`));
-  showToast("Workspace deleted");
-  document.getElementById('dynamic-configure-drawer')?.remove();
-  closeAllDrawers();
-  activeWorkspaceId = null;
-  document.getElementById('workspace-view').classList.add('hidden');
-  document.getElementById('empty-state').classList.remove('hidden');
-};
-
-// ================= MEMBERS TAB =================
-async function renderMembersTab(container) {
-  const wsId = activeWorkspaceId;
-  const wsSnap = await get(ref(db, `workspaces/${wsId}`));
-  const ws = wsSnap.val();
-  const user = auth.currentUser;
-  const isAdmin = ws.ownerUid === user.uid;
-
-  container.innerHTML = `
-    ${isAdmin && ws.adminApprovalEnabled ? `
-    <div class="card">
-      <div class="section-title"><i class="fas fa-user-clock"></i> Pending join requests</div>
-      <div class="scroll-box" id="pending-list"></div>
-    </div>` : ''}
-    <div class="card">
-      <div class="section-title"><i class="fas fa-address-book"></i> Member Directory</div>
-      <input type="text" id="member-search" placeholder="Search members..." style="margin-bottom:12px;">
-      <div class="scroll-box" id="member-list" style="max-height:400px;"></div>
-      <hr style="opacity:.1;margin:16px 0;">
-      <div class="input-group"><label>Your member tag (visible to this workspace only)</label>
-        <div style="display:flex;gap:8px;">
-          <input type="text" id="my-tag-input" placeholder="e.g. Faith's parents">
-          <button class="btn btn-primary" style="width:auto;" onclick="saveMyTag('${wsId}')">Save</button>
+    <!-- AUTH SECTION: SIGNUP CONTROLLER -->
+    <div id="signup-section" class="auth-container fade-in hidden">
+        <h2 style="margin-bottom: 5px;">Create Platform Workspace</h2>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 25px;">Sign up below to launch real-time synchronous instances</p>
+        
+        <div class="input-group">
+            <label>Email Address</label>
+            <input type="email" id="signup-email" placeholder="name@domain.com">
         </div>
-      </div>
-    </div>
-  `;
-
-  if (isAdmin && ws.adminApprovalEnabled) {
-    const pendingUnsub = onValue(ref(db, `workspaces/${wsId}/pendingRequests`), (snap) => {
-      const data = snap.val() || {};
-      const list = document.getElementById('pending-list');
-      if (!list) return;
-      const keys = Object.keys(data);
-      list.innerHTML = keys.length ? '' : `<p style="color:var(--text-muted);font-size:.85rem;">No pending requests</p>`;
-      keys.forEach(uid => {
-        const r = data[uid];
-        const row = document.createElement('div');
-        row.className = 'member-row';
-        row.innerHTML = `<img class="avatar-sm" src="${r.profilePic}"><div style="flex:1;"><div style="font-weight:600;">${r.displayName}</div><div style="font-size:.72rem;color:var(--text-muted);">UID: ${r.uid}</div></div>
-          <button class="btn" style="width:auto;padding:6px 10px;background:#dcfce7;color:#15803d;" onclick="approveRequest('${wsId}','${uid}')"><i class="fas fa-check"></i></button>
-          <button class="btn" style="width:auto;padding:6px 10px;background:#fee2e2;color:#b91c1c;" onclick="rejectRequest('${wsId}','${uid}')"><i class="fas fa-times"></i></button>`;
-        list.appendChild(row);
-      });
-    });
-    activeWorkspaceUnsubs.push(()=>{});
-  }
-
-  let allMembers = {};
-  onValue(ref(db, `workspaces/${wsId}/members`), (snap) => {
-    allMembers = snap.val() || {};
-    renderMemberList(allMembers, '');
-  });
-
-  function renderMemberList(members, filter) {
-    const list = document.getElementById('member-list');
-    if (!list) return;
-    list.innerHTML = '';
-    Object.keys(members).forEach(uid => {
-      const m = members[uid];
-      if (filter && !m.displayName.toLowerCase().includes(filter.toLowerCase())) return;
-      const row = document.createElement('div');
-      row.className = 'member-row';
-      row.innerHTML = `<img class="avatar-sm" src="${m.profilePic}">
-        <div style="flex:1;">
-          <div style="font-weight:600;display:flex;align-items:center;gap:6px;">${m.displayName} ${m.tag ? `<span class="tag-pill">${m.tag}</span>` : ''} ${uid===ws.ownerUid?'<i class="fas fa-crown" style="color:var(--warning);font-size:.75rem;" title="Admin"></i>':''}</div>
-          <div style="font-size:.72rem;color:var(--text-muted);">UID: ${uid}</div>
+        <div class="input-group">
+            <label>Secure Password</label>
+            <input type="password" id="signup-password" placeholder="••••••••">
         </div>
-        ${isAdmin && uid !== ws.ownerUid ? `<button class="btn" style="width:auto;padding:6px 10px;background:#fee2e2;color:#b91c1c;" onclick="removeMember('${wsId}','${uid}')"><i class="fas fa-user-minus"></i></button>` : ''}`;
-      list.appendChild(row);
-    });
-    if (Object.keys(members).length === 0) list.innerHTML = `<p style="color:var(--text-muted);font-size:.85rem;">No members</p>`;
-  }
-
-  document.getElementById('member-search').addEventListener('input', (e) => renderMemberList(allMembers, e.target.value));
-  document.getElementById('my-tag-input').value = (allMembers[user.uid] && allMembers[user.uid].tag) || '';
-  get(ref(db, `workspaces/${wsId}/members/${user.uid}/tag`)).then(s => { document.getElementById('my-tag-input').value = s.val() || ''; });
-}
-
-window.approveRequest = async (wsId, uid) => {
-  const reqSnap = await get(ref(db, `workspaces/${wsId}/pendingRequests/${uid}`));
-  const r = reqSnap.val();
-  await set(ref(db, `workspaces/${wsId}/members/${uid}`), { displayName:r.displayName, profilePic:r.profilePic, tag:'', joinedAt:new Date().toISOString() });
-  await set(ref(db, `users/${uid}/workspaces/${wsId}`), true);
-  await remove(ref(db, `workspaces/${wsId}/pendingRequests/${uid}`));
-  showToast("Member approved");
-};
-window.rejectRequest = async (wsId, uid) => {
-  await remove(ref(db, `workspaces/${wsId}/pendingRequests/${uid}`));
-  showToast("Request rejected");
-};
-window.removeMember = async (wsId, uid) => {
-  if (!confirm("Remove this member from the workspace?")) return;
-  await remove(ref(db, `workspaces/${wsId}/members/${uid}`));
-  await remove(ref(db, `users/${uid}/workspaces/${wsId}`));
-  showToast("Member removed");
-};
-window.saveMyTag = async (wsId) => {
-  const user = auth.currentUser;
-  const tag = document.getElementById('my-tag-input').value.trim();
-  await update(ref(db, `workspaces/${wsId}/members/${user.uid}`), { tag });
-  showToast("Tag saved");
-};
-
-// ================= WHITEBOARD TAB =================
-function renderWhiteboardTab(container) {
-  const wsId = activeWorkspaceId;
-  const user = auth.currentUser;
-  container.innerHTML = `
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-        <div class="section-title" style="margin-bottom:0;"><i class="fas fa-chalkboard"></i> Shared Whiteboard</div>
-        <div style="display:flex;gap:8px;align-items:center;">
-          <input type="color" id="wb-color" value="#2563eb" style="width:36px;height:36px;padding:2px;">
-          <button class="btn btn-secondary" style="width:auto;padding:8px 12px;" onclick="clearWhiteboard('${wsId}')"><i class="fas fa-eraser"></i></button>
+        
+        <button class="btn btn-primary" onclick="handleEmailSignup()">Register Workspace</button>
+        
+        <div class="disclaimer-box">
+            Email and password login or signup is completely experimental, if you want stability and speed. Use Google authentication
         </div>
-      </div>
-      <div class="wb-presence" id="wb-presence-label"></div>
-      <canvas id="whiteboard-canvas"></canvas>
-      <div style="font-size:.75rem;color:var(--text-muted);margin-top:8px;" id="wb-last-edited"></div>
+
+        <button class="btn btn-google" onclick="handleGoogleAuth()">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google logo" style="width: 18px; height: 18px;">
+            Continue with Google
+        </button>
+
+        <hr style="margin: 20px 0; opacity: 0.1;">
+        
+        <button class="btn btn-link" style="color: var(--primary); font-weight: 600;" onclick="switchAuthView('login')">
+            Already have an account? Login instead.
+        </button>
     </div>
-  `;
-  const canvas = document.getElementById('whiteboard-canvas');
-  const ctx = canvas.getContext('2d');
-  function resizeCanvas(){ const rect = canvas.getBoundingClientRect(); canvas.width = rect.width; canvas.height = 420; redrawAll(); }
-  let strokes = {};
-  function redrawAll(){
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    Object.values(strokes).forEach(s => drawStroke(s));
-  }
-  function drawStroke(s){
-    if (!s.points || s.points.length < 2) return;
-    ctx.strokeStyle = s.color; ctx.lineWidth = 3; ctx.lineCap='round'; ctx.lineJoin='round';
-    ctx.beginPath();
-    ctx.moveTo(s.points[0].x*canvas.width, s.points[0].y*canvas.height);
-    for (let i=1;i<s.points.length;i++) ctx.lineTo(s.points[i].x*canvas.width, s.points[i].y*canvas.height);
-    ctx.stroke();
-  }
-  window.addEventListener('resize', resizeCanvas);
-  resizeCanvas();
 
-  const strokesUnsub = onValue(ref(db, `workspaces/${wsId}/whiteboard/strokes`), (snap) => {
-    strokes = snap.val() || {}; redrawAll();
-  });
-  const presenceUnsub = onValue(ref(db, `workspaces/${wsId}/whiteboard/presence`), (snap) => {
-    const data = snap.val() || {};
-    const drawing = Object.values(data).filter(p => p.drawing).map(p => p.displayName);
-    document.getElementById('wb-presence-label').innerText = drawing.length ? `${drawing.join(', ')} ${drawing.length>1?'are':'is'} drawing...` : '';
-  });
-  const lastEditUnsub = onValue(ref(db, `workspaces/${wsId}/whiteboard/lastEdited`), (snap) => {
-    const d = snap.val();
-    document.getElementById('wb-last-edited').innerText = d ? `Last edited by ${d.displayName} at ${d.time}` : '';
-  });
-  activeWorkspaceUnsubs.push(()=>window.removeEventListener('resize', resizeCanvas));
+    <!-- MAIN PLATFORM APP LANDING INTERFACE -->
+    <div id="app-dashboard" class="dashboard hidden">
+        <div class="welcome-card fade-in">
+            <h1 style="color: var(--text-main); margin-bottom: 10px;">Synchronous Portal</h1>
+            <p style="color: var(--text-muted);">Welcome to your real-time cloud operations headquarters. Use the top left toggle button menu option anytime to manage your live profile deployment identity credentials.</p>
+        </div>
 
-  let drawing = false, currentStrokeId = null, currentPoints = [];
-  function getPos(e){
-    const rect = canvas.getBoundingClientRect();
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    return { x:(clientX-rect.left)/rect.width, y:(clientY-rect.top)/rect.height };
-  }
-  function startDraw(e){
-    drawing = true; currentPoints = [getPos(e)];
-    currentStrokeId = push(ref(db, `workspaces/${wsId}/whiteboard/strokes`)).key;
-    set(ref(db, `workspaces/${wsId}/whiteboard/presence/${user.uid}`), { drawing:true, displayName: currentUserProfile.displayName });
-  }
-  function moveDraw(e){
-    if (!drawing) return;
-    currentPoints.push(getPos(e));
-    ctx.strokeStyle = document.getElementById('wb-color').value; ctx.lineWidth = 3; ctx.lineCap='round';
-    const p1 = currentPoints[currentPoints.length-2], p2 = currentPoints[currentPoints.length-1];
-    if (p1){ ctx.beginPath(); ctx.moveTo(p1.x*canvas.width,p1.y*canvas.height); ctx.lineTo(p2.x*canvas.width,p2.y*canvas.height); ctx.stroke(); }
-  }
-  function endDraw(){
-    if (!drawing) return;
-    drawing = false;
-    if (currentPoints.length > 1) {
-      set(ref(db, `workspaces/${wsId}/whiteboard/strokes/${currentStrokeId}`), { points: currentPoints, color: document.getElementById('wb-color').value, uid: user.uid });
-      set(ref(db, `workspaces/${wsId}/whiteboard/lastEdited`), { uid:user.uid, displayName: currentUserProfile.displayName, time: new Date().toLocaleString() });
-    }
-    set(ref(db, `workspaces/${wsId}/whiteboard/presence/${user.uid}`), { drawing:false, displayName: currentUserProfile.displayName });
-  }
-  canvas.addEventListener('mousedown', startDraw);
-  canvas.addEventListener('mousemove', moveDraw);
-  canvas.addEventListener('mouseup', endDraw);
-  canvas.addEventListener('mouseleave', endDraw);
-  canvas.addEventListener('touchstart', (e)=>{ e.preventDefault(); startDraw(e); });
-  canvas.addEventListener('touchmove', (e)=>{ e.preventDefault(); moveDraw(e); });
-  canvas.addEventListener('touchend', endDraw);
-}
-window.clearWhiteboard = async (wsId) => {
-  if (!confirm("Clear the whiteboard for everyone?")) return;
-  await remove(ref(db, `workspaces/${wsId}/whiteboard/strokes`));
-  showToast("Whiteboard cleared");
-};
-
-// ================= SHARED NOTES (TEXTBOXES) TAB =================
-function renderNotesTab(container) {
-  const wsId = activeWorkspaceId;
-  const user = auth.currentUser;
-  container.innerHTML = `
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-        <div class="section-title" style="margin-bottom:0;"><i class="fas fa-sticky-note"></i> Shared Notes <span id="notes-count" style="color:var(--text-muted);font-weight:400;font-size:.85rem;"></span></div>
-        <button class="btn btn-primary" style="width:auto;" id="add-note-btn" onclick="addTextbox('${wsId}')"><i class="fas fa-plus"></i> New note</button>
-      </div>
-      <div id="notes-list"></div>
+        <h3 style="margin-bottom: 15px; color: var(--text-muted);">Active Cloud Workspaces</h3>
+        <div class="workspace-grid">
+            <div class="channel-card fade-in">
+                <h4 style="margin-bottom: 8px; color: var(--primary);"><i class="fas fa-comments"></i> global-stream</h4>
+                <p style="font-size: 0.85rem; color: var(--text-muted);">Primary collaboration stream context layer for all connected engineering operations endpoints.</p>
+            </div>
+            <div class="channel-card fade-in" style="animation-delay: 0.1s;">
+                <h4 style="margin-bottom: 8px; color: var(--success);"><i class="fas fa-project-diagram"></i> design-system</h4>
+                <p style="font-size: 0.85rem; color: var(--text-muted);">Asset canvas space modeling standard system components UI tokens parameters.</p>
+            </div>
+            <div class="channel-card fade-in" style="animation-delay: 0.2s;">
+                <h4 style="margin-bottom: 8px; color: var(--warning);"><i class="fas fa-terminal"></i> dev-logs</h4>
+                <p style="font-size: 0.85rem; color: var(--text-muted);">Real-time monitoring reporting diagnostic telemetry output structures.</p>
+            </div>
+        </div>
     </div>
-  `;
-  onValue(ref(db, `workspaces/${wsId}/textboxes`), (snap) => {
-    const data = snap.val() || {};
-    const keys = Object.keys(data);
-    document.getElementById('notes-count').innerText = `(${keys.length}/20)`;
-    document.getElementById('add-note-btn').disabled = keys.length >= 20;
-    const list = document.getElementById('notes-list');
-    keys.forEach(id => {
-      const n = data[id];
-      let card = document.getElementById('note-' + id);
-      if (!card) {
-        card = document.createElement('div');
-        card.id = 'note-' + id;
-        card.className = 'textbox-card';
-        list.appendChild(card);
-        let debounceTimer;
-        card.addEventListener('input', (e) => {
-          if (e.target.tagName === 'TEXTAREA') {
-            clearTimeout(debounceTimer);
-            const cursorPos = e.target.selectionStart;
-            debounceTimer = setTimeout(() => {
-              update(ref(db, `workspaces/${wsId}/textboxes/${id}`), { content: e.target.value, lastEditedBy: currentUserProfile.displayName, lastEditedAt: new Date().toLocaleString() });
-            }, 300);
-            set(ref(db, `workspaces/${wsId}/textboxes/${id}/cursors/${user.uid}`), { name: currentUserProfile.displayName, pos: cursorPos });
-          }
+
+    <!-- Script Architecture Modules -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, sendPasswordResetEmail, signOut, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getDatabase, ref, set, get, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        // Specified User App Firebase Configuration Credentials
+        const firebaseConfig = {
+          apiKey: "AIzaSyCzV75WoXRkbX9Davc_3Vr853Gvej1WEww",
+          authDomain: "serverfluxionary.firebaseapp.com",
+          databaseURL: "https://serverfluxionary-default-rtdb.asia-southeast1.firebasedatabase.app",
+          projectId: "serverfluxionary",
+          storageBucket: "serverfirebasestorage.app",
+          messagingSenderId: "693102090542",
+          appId: "1:693102090542:web:59298f926dd0257ce682bf"
+        };
+
+        // Cloudinary Parameter Variables
+        const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/dufbzl68g/image/upload";
+        const CLOUDINARY_UPLOAD_PRESET = "ml_default";
+
+        // Init App Interfaces
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+        const googleProvider = new GoogleAuthProvider();
+
+        let isUserFullyRegistered = false;
+        let currentUserReferenceObject = null;
+        let currentProfileImageUrlBlob = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80";
+
+        // Global Alert Logger System
+        window.showToast = (msg, type = 'success') => {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle';
+            toast.innerHTML = `<i class="fas ${icon}" style="color: var(--${type})"></i> <span>${msg}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        };
+
+        // UI Core Visibility Toggle Router
+        function switchAuthView(targetMode) {
+            document.getElementById('login-section').classList.add('hidden');
+            document.getElementById('signup-section').classList.add('hidden');
+            
+            if(targetMode === 'login') {
+                document.getElementById('login-section').classList.remove('hidden');
+            } else {
+                document.getElementById('signup-section').classList.remove('hidden');
+            }
+        }
+        window.switchAuthView = switchAuthView;
+
+        // Toggle left drawer view matrix manually
+        window.toggleSidebar = () => {
+            if (!isUserFullyRegistered) {
+                showToast("You must complete your user verification data profile configurations first.", "error");
+                return;
+            }
+            document.getElementById('sidebar').classList.toggle('active');
+            document.getElementById('sidebar-overlay').classList.toggle('active');
+        };
+
+        window.handleLogoClick = () => {
+            if (isUserFullyRegistered) {
+                window.toggleSidebar();
+            }
+        };
+
+        // State Machine Sync Pipeline
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUserReferenceObject = user;
+                // Fetch profile verification state from Firebase RTDB matrix endpoints
+                const userSnapshot = await get(ref(db, `synchronous_users/${user.uid}`));
+                
+                if (userSnapshot.exists() && userSnapshot.val().profileCompleted) {
+                    const profileData = userSnapshot.val();
+                    isUserFullyRegistered = true;
+                    hydrateUIProfileData(profileData);
+                    showMainApplicationSection();
+                } else {
+                    // Profile creation requirements enforced immediately
+                    isUserFullyRegistered = false;
+                    triggerProfileForcedDrawer(user);
+                }
+            } else {
+                currentUserReferenceObject = null;
+                isUserFullyRegistered = false;
+                resetPlatformState();
+                switchAuthView('login');
+                document.getElementById('login-section').classList.remove('hidden');
+            }
         });
-      }
-      card.className = 'textbox-card' + (n.important ? ' important' : '');
-      const ta = card.querySelector('textarea');
-      const activeTyping = card.dataset.typing === 'true';
-      if (!ta || document.activeElement !== ta) {
-        card.innerHTML = `
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-            <label style="display:flex;align-items:center;gap:6px;font-size:.85rem;"><input type="checkbox" style="width:auto;" ${n.important?'checked':''} onchange="toggleImportant('${wsId}','${id}', this.checked)"> Mark important</label>
-            <button class="btn" style="width:auto;padding:4px 8px;background:#fee2e2;color:#b91c1c;" onclick="deleteTextbox('${wsId}','${id}')"><i class="fas fa-trash"></i></button>
-          </div>
-          <textarea placeholder="Type here, everyone sees it live...">${n.content||''}</textarea>
-          <div class="textbox-meta"><span id="cursors-${id}"></span><span>${n.lastEditedBy ? 'Last edited by '+n.lastEditedBy+' at '+n.lastEditedAt : ''}</span></div>
-        `;
-      }
-      onValue(ref(db, `workspaces/${wsId}/textboxes/${id}/cursors`), (cSnap) => {
-        const cursors = cSnap.val() || {};
-        const others = Object.entries(cursors).filter(([uid])=>uid!==user.uid).map(([,c])=>c.name);
-        const lbl = document.getElementById('cursors-' + id);
-        if (lbl) lbl.innerText = others.length ? `${others.join(', ')} editing...` : '';
-      });
-    });
-    [...list.children].forEach(el => { if (!keys.includes(el.id.replace('note-',''))) el.remove(); });
-  });
-}
-window.addTextbox = async (wsId) => {
-  const snap = await get(ref(db, `workspaces/${wsId}/textboxes`));
-  const count = snap.val() ? Object.keys(snap.val()).length : 0;
-  if (count >= 20) return showToast("Maximum of 20 notes reached for this workspace", "error");
-  const newRef = push(ref(db, `workspaces/${wsId}/textboxes`));
-  await set(newRef, { content:'', important:false, lastEditedBy: currentUserProfile.displayName, lastEditedAt: new Date().toLocaleString() });
-};
-window.toggleImportant = async (wsId, id, val) => { await update(ref(db, `workspaces/${wsId}/textboxes/${id}`), { important: val }); };
-window.deleteTextbox = async (wsId, id) => { await remove(ref(db, `workspaces/${wsId}/textboxes/${id}`)); showToast("Note deleted"); };
 
-// ================= CHAT TAB =================
-let chatMentionMembers = {};
-function renderChatTab(container) {
-  const wsId = activeWorkspaceId;
-  const user = auth.currentUser;
-  container.innerHTML = `
-    <div class="card chat-wrap">
-      <div class="chat-messages" id="chat-messages"></div>
-      <div id="recording-ui" class="hidden recording-indicator" style="margin-bottom:8px;"><span class="rec-dot"></span> <span id="rec-timer">0:00</span> <button class="btn" style="width:auto;padding:4px 10px;background:#fee2e2;color:#b91c1c;" onclick="cancelRecording()">Cancel</button> <button class="btn" style="width:auto;padding:4px 10px;background:#dcfce7;color:#15803d;" onclick="stopRecordingAndSend('${wsId}')">Send</button></div>
-      <div class="chat-input-row">
-        <input type="file" id="chat-file-input" style="display:none;" accept="image/*,video/*,application/*">
-        <input type="file" id="chat-camera-input" style="display:none;" accept="image/*,video/*" capture="environment">
-        <button class="icon-btn" title="Attach file" onclick="document.getElementById('chat-file-input').click()"><i class="fas fa-paperclip"></i></button>
-        <button class="icon-btn" title="Camera" onclick="document.getElementById('chat-camera-input').click()"><i class="fas fa-camera"></i></button>
-        <button class="icon-btn" title="Voice message" onclick="startRecording('${wsId}')"><i class="fas fa-microphone"></i></button>
-        <textarea id="chat-text-input" rows="1" placeholder="Type a message... use @ to mention"></textarea>
-        <div class="mention-dropdown hidden" id="mention-dropdown"></div>
-        <button class="icon-btn" style="background:var(--primary);color:#fff;" onclick="sendChatMessage('${wsId}')"><i class="fas fa-paper-plane"></i></button>
-      </div>
-    </div>
-  `;
-  get(ref(db, `workspaces/${wsId}/members`)).then(snap => { chatMentionMembers = snap.val() || {}; });
+        function showMainApplicationSection() {
+            hideAllInterfaceSections();
+            document.getElementById('app-dashboard').classList.remove('hidden');
+            document.getElementById('nav-user').classList.remove('hidden');
+            
+            // Activate structural profile editing sidebar navigation handlers
+            const menuIcon = document.getElementById('menu-bar-icon');
+            menuIcon.style.cursor = 'pointer';
+            menuIcon.style.opacity = '1';
+        }
 
-  const chatInput = document.getElementById('chat-text-input');
-  chatInput.addEventListener('input', () => {
-    const val = chatInput.value;
-    const atIndex = val.lastIndexOf('@');
-    const dropdown = document.getElementById('mention-dropdown');
-    if (atIndex !== -1 && (atIndex === 0 || val[atIndex-1] === ' ')) {
-      const query = val.slice(atIndex+1).toLowerCase();
-      const matches = Object.entries(chatMentionMembers).filter(([uid,m]) => m.displayName.toLowerCase().includes(query));
-      if (matches.length) {
-        dropdown.innerHTML = matches.map(([uid,m]) => `<div class="mention-item" onclick="insertMention('${uid}','${m.displayName.replace(/'/g,"\\'")}')"><img class="avatar-sm" src="${m.profilePic}" style="width:24px;height:24px;">${m.displayName}</div>`).join('');
-        dropdown.classList.remove('hidden');
-      } else dropdown.classList.add('hidden');
-    } else dropdown.classList.add('hidden');
-  });
-  chatInput.addEventListener('keydown', (e) => { if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(wsId); } });
+        function triggerProfileForcedDrawer(user) {
+            hideAllInterfaceSections();
+            document.getElementById('forced-overlay').classList.add('active');
+            document.getElementById('forced-drawer').classList.add('active');
+            
+            // Prefill standard baseline variables if populated from Google provider instances
+            document.getElementById('setup-display-name').value = user.displayName || "";
+            if (user.photoURL) {
+                currentProfileImageUrlBlob = user.photoURL;
+                document.getElementById('setup-avatar-preview').src = user.photoURL;
+            }
+        }
 
-  document.getElementById('chat-file-input').addEventListener('change', (e)=>handleChatFileUpload(e, wsId));
-  document.getElementById('chat-camera-input').addEventListener('change', (e)=>handleChatFileUpload(e, wsId));
+        function hydrateUIProfileData(data) {
+            document.getElementById('user-name-display').innerText = data.displayName || "Synchronous Member";
+            document.getElementById('nav-avatar-img').src = data.avatarUrl || currentProfileImageUrlBlob;
+            
+            // Hydrate Sidebar options matching configuration properties
+            document.getElementById('edit-display-name').value = data.displayName || "";
+            document.getElementById('edit-bio').value = data.description || "";
+            document.getElementById('edit-avatar-preview').src = data.avatarUrl || currentProfileImageUrlBlob;
+            currentProfileImageUrlBlob = data.avatarUrl || currentProfileImageUrlBlob;
+        }
 
-  onValue(ref(db, `workspaces/${wsId}/chat`), (snap) => {
-    const data = snap.val() || {};
-    const msgList = document.getElementById('chat-messages');
-    if (!msgList) return;
-    const keys = Object.keys(data).sort((a,b)=> (data[a].ts||0)-(data[b].ts||0));
-    msgList.innerHTML = '';
-    keys.forEach(id => {
-      const m = data[id];
-      const row = document.createElement('div');
-      row.className = 'chat-msg';
-      let mediaHtml = '';
-      if (m.mediaUrl) {
-        if (m.mediaType === 'image') mediaHtml = `<div class="chat-media"><img src="${m.mediaUrl}"></div>`;
-        else if (m.mediaType === 'video') mediaHtml = `<div class="chat-media"><video controls src="${m.mediaUrl}"></video></div>`;
-        else if (m.mediaType === 'voice') mediaHtml = `<audio controls src="${m.mediaUrl}" style="margin-top:4px;"></audio>`;
-        else mediaHtml = `<a href="${m.mediaUrl}" target="_blank" style="color:var(--primary);font-size:.85rem;"><i class="fas fa-file"></i> Download file</a>`;
-      }
-      let text = m.text || '';
-      if (m.mentionNames) m.mentionNames.forEach(n => { text = text.replace(new RegExp('@'+n, 'g'), `<span class="mention-tag">@${n}</span>`); });
-      row.innerHTML = `<img class="avatar-sm" src="${m.profilePic}">
-        <div><div class="sender">${m.displayName}</div><div class="bubble">${text ? text : ''}${mediaHtml}</div><div class="ts">${m.timestampStr}</div></div>`;
-      msgList.appendChild(row);
-    });
-    msgList.scrollTop = msgList.scrollHeight;
-  });
-}
+        function hideAllInterfaceSections() {
+            document.getElementById('login-section').classList.add('hidden');
+            document.getElementById('signup-section').classList.add('hidden');
+            document.getElementById('app-dashboard').classList.add('hidden');
+            document.getElementById('forced-overlay').classList.remove('active');
+            document.getElementById('forced-drawer').classList.remove('active');
+        }
 
-window.insertMention = (uid, name) => {
-  const input = document.getElementById('chat-text-input');
-  const val = input.value;
-  const atIndex = val.lastIndexOf('@');
-  input.value = val.slice(0, atIndex) + '@' + name + ' ';
-  document.getElementById('mention-dropdown').classList.add('hidden');
-  input.focus();
-};
+        function resetPlatformState() {
+            hideAllInterfaceSections();
+            document.getElementById('nav-user').classList.add('hidden');
+            const menuIcon = document.getElementById('menu-bar-icon');
+            menuIcon.style.cursor = 'not-allowed';
+            menuIcon.style.opacity = '0.5';
+            document.getElementById('sidebar').classList.remove('active');
+            document.getElementById('sidebar-overlay').classList.remove('active');
+        }
 
-window.sendChatMessage = async (wsId) => {
-  const user = auth.currentUser;
-  const input = document.getElementById('chat-text-input');
-  const text = input.value.trim();
-  if (!text) return;
-  const mentionNames = [];
-  const mentionUids = [];
-  Object.entries(chatMentionMembers).forEach(([uid,m]) => {
-    if (text.includes('@' + m.displayName)) { mentionNames.push(m.displayName); mentionUids.push(uid); }
-  });
-  const nowStr = new Date().toLocaleString();
-  const msgRef = push(ref(db, `workspaces/${wsId}/chat`));
-  await set(msgRef, {
-    uid:user.uid, displayName: currentUserProfile.displayName, profilePic: currentUserProfile.profilePic,
-    text, mentionNames, ts: Date.now(), timestampStr: nowStr
-  });
-  const wsSnap = await get(ref(db, `workspaces/${wsId}/name`));
-  const wsName = wsSnap.val();
-  for (const uid of mentionUids) {
-    const mRef = push(ref(db, `users/${uid}/mentions`));
-    await set(mRef, { workspaceName: wsName, fromDisplayName: currentUserProfile.displayName, timestamp: nowStr, seen:false });
-  }
-  input.value = '';
-};
+        // Handling Cloudinary Media Pipelines Direct Unsigned Requests
+        async function uploadMediaFileToCloudinary(fileObject) {
+            const formData = new FormData();
+            formData.append('file', fileObject);
+            formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
 
-async function handleChatFileUpload(e, wsId) {
-  const file = e.target.files[0]; if (!file) return;
-  if (file.size > 70*1024*1024) { showToast("File exceeds the 70MB upload limit", "error"); return; }
-  const isImage = file.type.startsWith('image/');
-  const isVideo = file.type.startsWith('video/');
-  const resourceType = isImage || isVideo ? 'auto' : 'raw';
-  showToast("Uploading...");
-  const url = await uploadToCloudinary(file, resourceType);
-  if (!url) return;
-  const user = auth.currentUser;
-  const msgRef = push(ref(db, `workspaces/${wsId}/chat`));
-  await set(msgRef, {
-    uid:user.uid, displayName: currentUserProfile.displayName, profilePic: currentUserProfile.profilePic,
-    text:'', mediaUrl:url, mediaType: isImage?'image':(isVideo?'video':'file'), mentionNames:[], ts: Date.now(), timestampStr: new Date().toLocaleString()
-  });
-  e.target.value = '';
-}
+            try {
+                const response = await fetch(CLOUDINARY_URL, {
+                    method: 'POST',
+                    body: formData
+                });
+                if (!response.ok) throw new Error('Cloudinary endpoint denied network stream asset transmission.');
+                const data = await response.json();
+                return data.secure_url;
+            } catch (err) {
+                showToast("Media streaming upload failed. Defaulting image placeholder asset configuration.", "error");
+                return null;
+            }
+        }
 
-window.startRecording = async (wsId) => {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio:true });
-    recordedChunks = [];
-    mediaRecorder = new MediaRecorder(stream);
-    mediaRecorder.ondataavailable = (e) => { if (e.data.size>0) recordedChunks.push(e.data); };
-    mediaRecorder.start();
-    recordStartTime = Date.now();
-    document.getElementById('recording-ui').classList.remove('hidden');
-    recordTimerInterval = setInterval(() => {
-      const secs = Math.floor((Date.now()-recordStartTime)/1000);
-      document.getElementById('rec-timer').innerText = `${Math.floor(secs/60)}:${String(secs%60).padStart(2,'0')}`;
-      if (secs >= 480) stopRecordingAndSend(wsId); // 8 minute cap
-    }, 500);
-  } catch(err) { showToast("Microphone access denied", "error"); }
-};
-window.cancelRecording = () => {
-  if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
-  clearInterval(recordTimerInterval);
-  document.getElementById('recording-ui').classList.add('hidden');
-  recordedChunks = [];
-};
-window.stopRecordingAndSend = (wsId) => {
-  if (!mediaRecorder) return;
-  mediaRecorder.onstop = async () => {
-    clearInterval(recordTimerInterval);
-    document.getElementById('recording-ui').classList.add('hidden');
-    const blob = new Blob(recordedChunks, { type:'audio/webm' });
-    const file = new File([blob], 'voice-message.webm', { type:'audio/webm' });
-    showToast("Uploading voice message...");
-    const url = await uploadToCloudinary(file, 'video');
-    if (!url) return;
-    const user = auth.currentUser;
-    const msgRef = push(ref(db, `workspaces/${wsId}/chat`));
-    await set(msgRef, {
-      uid:user.uid, displayName: currentUserProfile.displayName, profilePic: currentUserProfile.profilePic,
-      text:'', mediaUrl:url, mediaType:'voice', mentionNames:[], ts: Date.now(), timestampStr: new Date().toLocaleString()
-    });
-  };
-  if (mediaRecorder.state !== 'inactive') mediaRecorder.stop();
-};
+        // File Selection Handlers for Live Blob Previews
+        document.getElementById('setup-avatar-input').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                document.getElementById('setup-save-btn').disabled = true;
+                document.getElementById('setup-save-btn').innerText = "Streaming asset image...";
+                const uploadedUrl = await uploadMediaFileToCloudinary(file);
+                if (uploadedUrl) {
+                    currentProfileImageUrlBlob = uploadedUrl;
+                    document.getElementById('setup-avatar-preview').src = uploadedUrl;
+                    showToast("Asset successfully registered onto Cloudinary storage pools.");
+                }
+                document.getElementById('setup-save-btn').disabled = false;
+                document.getElementById('setup-save-btn').innerHTML = '<i class="fas fa-save"></i> Save Profile Data';
+            }
+        });
 
-// ---------- join via URL param ----------
-window.addEventListener('load', () => {
-  const params = new URLSearchParams(window.location.search);
-  const joinCode = params.get('join');
-  if (joinCode) {
-    onAuthStateChanged(auth, (user) => {
-      if (user && currentUserProfile && currentUserProfile.profileCompleted) {
-        document.getElementById('join-code-input').value = joinCode;
-      }
-    });
-  }
-});
-</script>
+        document.getElementById('edit-avatar-input').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                document.getElementById('edit-save-btn').disabled = true;
+                document.getElementById('edit-save-btn').innerText = "Streaming updated asset...";
+                const uploadedUrl = await uploadMediaFileToCloudinary(file);
+                if (uploadedUrl) {
+                    currentProfileImageUrlBlob = uploadedUrl;
+                    document.getElementById('edit-avatar-preview').src = uploadedUrl;
+                    showToast("Cloudinary bucket media assets updated.");
+                }
+                document.getElementById('edit-save-btn').disabled = false;
+                document.getElementById('edit-save-btn').innerHTML = '<i class="fas fa-check-circle"></i> Update Identity';
+            }
+        });
+
+        // Forced Registration Actions
+        window.saveForcedProfile = async () => {
+            const displayName = document.getElementById('setup-display-name').value.trim();
+            const bio = document.getElementById('setup-bio').value.trim();
+
+            if (!displayName) {
+                showToast("Display Name coordinate cannot be blank instances.", "error");
+                return;
+            }
+
+            try {
+                const profilePayload = {
+                    uid: currentUserReferenceObject.uid,
+                    email: currentUserReferenceObject.email,
+                    displayName: displayName,
+                    description: bio,
+                    avatarUrl: currentProfileImageUrlBlob,
+                    profileCompleted: true,
+                    updatedAt: Date.now()
+                };
+
+                await set(ref(db, `synchronous_users/${currentUserReferenceObject.uid}`), profilePayload);
+                showToast("Workspace configuration credentials saved perfectly!");
+                
+                isUserFullyRegistered = true;
+                hydrateUIProfileData(profilePayload);
+                showMainApplicationSection();
+            } catch (err) {
+                showToast(err.message, "error");
+            }
+        };
+
+        // Sidebar Configuration Profile Modification Action Functionality
+        window.saveSidebarProfile = async () => {
+            const displayName = document.getElementById('edit-display-name').value.trim();
+            const bio = document.getElementById('edit-bio').value.trim();
+
+            if (!displayName) {
+                showToast("Display Name configuration data required.", "error");
+                return;
+            }
+
+            try {
+                const updatePayload = {
+                    displayName: displayName,
+                    description: bio,
+                    avatarUrl: currentProfileImageUrlBlob,
+                    updatedAt: Date.now()
+                };
+
+                await update(ref(db, `synchronous_users/${currentUserReferenceObject.uid}`), updatePayload);
+                showToast("Identity configuration properties modified.");
+                
+                document.getElementById('user-name-display').innerText = displayName;
+                document.getElementById('nav-avatar-img').src = currentProfileImageUrlBlob;
+                window.toggleSidebar();
+            } catch (err) {
+                showToast(err.message, "error");
+            }
+        };
+
+        // Email Form Native Auth Handlers
+        window.handleEmailLogin = async () => {
+            const email = document.getElementById('login-email').value.trim();
+            const pass = document.getElementById('login-password').value;
+
+            if(!email || !pass) return showToast("Please completely fulfill all input parameters.", "error");
+
+            try {
+                await signInWithEmailAndPassword(auth, email, pass);
+                showToast("Session authenticated successfully.");
+            } catch (err) {
+                showToast(err.message, "error");
+            }
+        };
+
+        window.handleEmailSignup = async () => {
+            const email = document.getElementById('signup-email').value.trim();
+            const pass = document.getElementById('signup-password').value;
+
+            if(!email || !pass) return showToast("Please populate registration schema items.", "error");
+
+            try {
+                await createUserWithEmailAndPassword(auth, email, pass);
+                showToast("Account instance provisioned securely.");
+            } catch (err) {
+                showToast(err.message, "error");
+            }
+        };
+
+        window.handleGoogleAuth = async () => {
+            try {
+                await signInWithPopup(auth, googleProvider);
+                showToast("Google Identity Provider handshake completed.");
+            } catch(err) {
+                showToast(err.message, "error");
+            }
+        };
+
+        window.handleForgotPassword = async () => {
+            const email = document.getElementById('login-email').value.trim();
+            if(!email) return showToast("Enter your email address in the box above first to receive reset tokens.", "error");
+            
+            try {
+                await sendPasswordResetEmail(auth, email);
+                showToast("Password recovery link transmitted to specified email vector.");
+            } catch(err) {
+                showToast(err.message, "error");
+            }
+        };
+
+        window.logout = () => signOut(auth).then(() => {
+            showToast("Workspace sessions detached cleanly.");
+        });
+    </script>
 </body>
 </html>
