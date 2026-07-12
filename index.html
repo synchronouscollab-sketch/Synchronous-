@@ -581,7 +581,7 @@
                     document.getElementById('my-friend-code').innerText = profile.friendCode || "------";
                     document.getElementById('my-uid').innerText = user.uid;
                     
-                    // Check if user is currently looking at the login page/auth view or verification view, routing them into the internal app UI view safely
+                    // FIXED: Aligned target redirection ID calculation from 'auth-container' to 'auth-section'
                     const currentActiveSectionId = document.querySelector('.dashboard:not(.hidden), .auth-container:not(.hidden)')?.id;
                     if (!currentActiveSectionId || currentActiveSectionId === 'auth-section' || currentActiveSectionId === 'verify-section') {
                         if (activeWorkspaceId) {
