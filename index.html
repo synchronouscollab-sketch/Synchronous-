@@ -1,1899 +1,1166 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Synchronous - Realtime Collaboration Hub</title>
-    
-    <!-- Google Fonts & FontAwesome -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Tailwind CSS Engine for Fluid Styling Configurations -->
-    <script src="https://cdn.tailwindcss.com"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Synchronous</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<style>
+:root{
+  --primary:#2563eb; --primary-hover:#1d4ed8; --bg:#f8fafc; --card-bg:#ffffff;
+  --text-main:#1e293b; --text-muted:#64748b; --error:#ef4444; --success:#10b981;
+  --warning:#f59e0b; --sidebar-width:320px;
+}
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Inter',sans-serif;}
+body{background:var(--bg);color:var(--text-main);line-height:1.6;overflow-x:hidden;}
+.hidden{display:none !important;}
+.btn{cursor:pointer;padding:12px 24px;border-radius:8px;border:none;font-weight:600;transition:all .3s cubic-bezier(.4,0,.2,1);display:inline-flex;align-items:center;justify-content:center;gap:8px;}
+.btn-primary{background:var(--primary);color:#fff;width:100%;}
+.btn-primary:hover{background:var(--primary-hover);transform:translateY(-2px);box-shadow:0 4px 12px rgba(37,99,235,.2);}
+.btn-google{background:#fff;color:#475569;border:1px solid #cbd5e1;width:100%;margin-top:10px;}
+.btn-google:hover{background:#f8fafc;}
+.btn:active{transform:scale(.95);}
+.btn:disabled{background:#cbd5e1;cursor:not-allowed;}
+.btn-secondary{background:#f1f5f9;color:var(--text-main);width:100%;}
+.btn-danger{background:#fee2e2;color:#b91c1c;}
 
-    <style>
-        :root {
-            --primary: #2563eb;
-            --primary-hover: #1d4ed8;
-            --bg: #f8fafc;
-            --card-bg: #ffffff;
-            --text-main: #1e293b;
-            --text-muted: #64748b;
-            --sidebar-width: 300px;
-        }
+nav{background:#fff;padding:1rem 5%;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 10px rgba(0,0,0,.05);position:sticky;top:0;z-index:100;}
+.logo{font-size:1.5rem;font-weight:800;color:var(--primary);letter-spacing:-1px;cursor:pointer;display:flex;align-items:center;gap:10px;}
+.hamburger-menu{font-size:1.25rem;color:var(--text-main);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:8px;border-radius:6px;transition:background .2s;}
+.hamburger-menu:hover{background:#f1f5f9;}
 
-        body.dark-theme {
-            --bg: #0f172a;
-            --card-bg: #1e293b;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-        }
+.sidebar{position:fixed;left:calc(-1 * var(--sidebar-width));top:0;width:var(--sidebar-width);height:100%;background:#fff;box-shadow:5px 0 25px rgba(0,0,0,.1);z-index:1001;transition:.3s cubic-bezier(.4,0,.2,1);padding:30px 20px;overflow-y:auto;}
+.sidebar.active{left:0;}
+.profile-drawer{position:fixed;left:-100%;top:0;width:100%;max-width:450px;height:100%;background:#fff;box-shadow:5px 0 25px rgba(0,0,0,.1);z-index:2000;transition:.3s cubic-bezier(.4,0,.2,1);padding:40px 30px;overflow-y:auto;}
+.profile-drawer.active{left:0;}
+.right-drawer{position:fixed;right:-100%;top:0;width:100%;max-width:480px;height:100%;background:#fff;box-shadow:-5px 0 25px rgba(0,0,0,.1);z-index:1500;transition:.35s cubic-bezier(.4,0,.2,1);padding:30px 25px;overflow-y:auto;}
+.right-drawer.active{right:0;}
+.drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);opacity:0;visibility:hidden;transition:.3s;z-index:1000;backdrop-filter:blur(2px);}
+.drawer-overlay.active{opacity:1;visibility:visible;}
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Inter', sans-serif;
-        }
+.auth-container{max-width:420px;margin:60px auto;padding:40px;background:#fff;border-radius:16px;box-shadow:0 10px 25px rgba(0,0,0,.05);}
+.input-group{margin-bottom:18px;}
+.input-group label{display:block;margin-bottom:8px;font-weight:500;color:var(--text-muted);font-size:.9rem;}
+input,textarea,select{width:100%;padding:12px;border:1px solid #e2e8f0;border-radius:8px;outline:none;transition:.2s;background:#fff;color:var(--text-main);}
+input:focus,textarea:focus,select:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.1);}
+.experimental-warning{background:#fffbeb;border:1px solid #fef3c7;color:#b45309;padding:12px;border-radius:8px;font-size:.8rem;margin-bottom:15px;display:flex;gap:8px;align-items:flex-start;}
 
-        body {
-            background-color: var(--bg);
-            color: var(--text-main);
-            transition: background-color 0.3s, color 0.3s;
-            overflow-x: hidden;
-        }
+.pfp-container{display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:20px;}
+.pfp-preview{width:100px;height:100px;border-radius:50%;object-fit:cover;background:#e2e8f0;border:2px solid var(--primary);}
+.avatar-sm{width:36px;height:36px;border-radius:50%;object-fit:cover;background:#e2e8f0;flex-shrink:0;}
 
-        .custom-sidebar {
-            width: var(--sidebar-width);
-            min-width: var(--sidebar-width);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
+#toast-container{position:fixed;bottom:30px;right:30px;z-index:9999;}
+.toast{background:#fff;color:var(--text-main);padding:16px 24px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.15);margin-top:10px;display:flex;align-items:center;gap:12px;min-width:300px;border-left:4px solid var(--primary);animation:slideIn .3s ease-out forwards;}
+.toast.success{border-color:var(--success);}
+.toast.error{border-color:var(--error);}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0;}to{transform:translateX(0);opacity:1;}}
+.fade-in{animation:fadeIn .4s cubic-bezier(.16,1,.3,1) forwards;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
 
-        /* Scrollbar styling overrides */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 4px;
-        }
-        body.dark-theme ::-webkit-scrollbar-thumb {
-            background: #475569;
-        }
+.main-empty{display:flex;align-items:center;justify-content:center;height:calc(100vh - 70px);color:var(--text-muted);font-size:1.2rem;font-weight:500;text-align:center;padding:20px;}
 
-        .remote-cursor {
-            position: absolute;
-            pointer-events: none;
-            transition: all 0.1s linear;
-            z-index: 50;
-        }
+.ws-list-item{display:flex;align-items:center;gap:12px;padding:12px;border-radius:10px;cursor:pointer;margin-bottom:8px;transition:.2s;}
+.ws-list-item:hover{background:#f1f5f9;}
+.ws-list-item.active-ws{background:rgba(37,99,235,.1);}
+.ws-icon{width:42px;height:42px;border-radius:10px;object-fit:cover;background:#e2e8f0;flex-shrink:0;}
 
-        .experimental-warning {
-            background-color: #fffbeb;
-            border: 1px solid #fef3c7;
-            color: #b45309;
-        }
-        body.dark-theme .experimental-warning {
-            background-color: rgba(245, 158, 11, 0.1);
-            border: 1px solid rgba(245, 158, 11, 0.2);
-        }
+.card{background:#fff;border-radius:12px;padding:20px;box-shadow:0 4px 6px rgba(0,0,0,.02);margin-bottom:16px;border:1px solid #f1f5f9;}
+.section-title{font-weight:700;font-size:1.05rem;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.scroll-box{max-height:260px;overflow-y:auto;}
+.tab-bar{display:flex;gap:6px;background:#f1f5f9;padding:5px;border-radius:10px;margin-bottom:20px;overflow-x:auto;}
+.tab-btn{padding:9px 16px;border-radius:8px;border:none;background:transparent;cursor:pointer;font-weight:600;font-size:.85rem;color:var(--text-muted);white-space:nowrap;transition:.2s;}
+.tab-btn.active{background:#fff;color:var(--primary);box-shadow:0 2px 6px rgba(0,0,0,.08);}
 
-        /* Whiteboard Canvas styling */
-        #whiteboard-canvas {
-            cursor: crosshair;
-            touch-action: none;
-        }
-    </style>
+.member-row{display:flex;align-items:center;gap:12px;padding:10px;border-radius:8px;margin-bottom:6px;}
+.member-row:hover{background:#f8fafc;}
+.tag-pill{font-size:.7rem;background:rgba(37,99,235,.1);color:var(--primary);padding:2px 8px;border-radius:20px;font-weight:600;}
+
+#whiteboard-canvas{border:1px solid #e2e8f0;border-radius:10px;background:#fff;touch-action:none;cursor:crosshair;width:100%;height:420px;}
+.wb-presence{font-size:.8rem;color:var(--primary);font-weight:600;height:18px;}
+
+.textbox-card{border:1px solid #e2e8f0;border-radius:10px;padding:14px;margin-bottom:12px;}
+.textbox-card.important{border-left:4px solid var(--warning);}
+.textbox-card textarea{min-height:90px;font-size:.9rem;}
+.textbox-meta{font-size:.72rem;color:var(--text-muted);margin-top:6px;display:flex;justify-content:space-between;}
+
+.chat-wrap{display:flex;flex-direction:column;height:calc(100vh - 230px);}
+.chat-messages{flex:1;overflow-y:auto;padding:10px 4px;}
+.chat-msg{display:flex;gap:10px;margin-bottom:16px;align-items:flex-start;}
+.chat-msg .bubble{background:#f1f5f9;padding:10px 14px;border-radius:12px;max-width:75%;font-size:.9rem;}
+.chat-msg .sender{font-weight:700;font-size:.8rem;margin-bottom:3px;color:var(--primary);}
+.chat-msg .ts{font-size:.68rem;color:var(--text-muted);margin-top:4px;}
+.mention-tag{background:rgba(37,99,235,.15);color:var(--primary);padding:1px 4px;border-radius:4px;font-weight:600;}
+.chat-input-row{display:flex;gap:8px;align-items:center;border-top:1px solid #e2e8f0;padding-top:12px;position:relative;}
+.chat-input-row textarea{resize:none;max-height:100px;}
+.icon-btn{background:#f1f5f9;border:none;border-radius:8px;padding:10px;cursor:pointer;color:var(--text-muted);font-size:1rem;}
+.icon-btn:hover{background:#e2e8f0;color:var(--primary);}
+.mention-dropdown{position:absolute;bottom:100%;left:0;background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.1);width:240px;max-height:200px;overflow-y:auto;margin-bottom:6px;}
+.mention-item{padding:8px 12px;display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.85rem;}
+.mention-item:hover{background:#f1f5f9;}
+.chat-media img,.chat-media video{max-width:220px;border-radius:8px;display:block;}
+
+.switch-container{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+.toggle-switch{position:relative;display:inline-block;width:50px;height:26px;flex-shrink:0;}
+.toggle-switch input{opacity:0;width:0;height:0;}
+.slider{position:absolute;cursor:pointer;inset:0;background:#cbd5e1;transition:.4s;border-radius:34px;}
+.slider:before{position:absolute;content:"";height:18px;width:18px;left:4px;bottom:4px;background:#fff;transition:.4s;border-radius:50%;}
+input:checked + .slider{background:var(--primary);}
+input:checked + .slider:before{transform:translateX(24px);}
+
+.recording-indicator{display:flex;align-items:center;gap:8px;color:var(--error);font-weight:600;font-size:.85rem;}
+.rec-dot{width:10px;height:10px;background:var(--error);border-radius:50%;animation:pulseDot 1s infinite;}
+@keyframes pulseDot{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+.app-layout{display:flex;}
+.main-content{flex:1;min-height:calc(100vh - 70px);}
+.ws-header{padding:20px 25px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.ws-body{padding:20px 25px;}
+
+@media(max-width:768px){
+  :root{--sidebar-width:270px;}
+  .auth-container{margin:40px 15px;padding:25px;}
+}
+</style>
 </head>
-<body class="dark-theme">
+<body>
 
-    <!-- Toast Notification Layout Container Engine -->
-    <div id="toast-container" class="fixed bottom-5 right-5 z-[9999] flex flex-col gap-3 pointer-events-none"></div>
+<div id="toast-container"></div>
+<div class="drawer-overlay" id="drawer-overlay" onclick="closeAllDrawers()"></div>
 
-    <!-- Mandatory Profile Initialization Drawer Overlay View -->
-    <div id="drawer-overlay" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[2000] hidden transition-opacity duration-300 opacity-0"></div>
-    <div id="mandatory-profile-drawer" class="fixed top-0 left-[-100%] w-full max-w-[450px] h-full bg-[#1e293b] shadow-2xl z-[2001] transition-all duration-300 overflow-y-auto p-8 flex flex-col text-slate-100">
-        <h2 class="text-2xl font-bold mb-2 flex items-center gap-2"><i class="fas fa-user-edit text-blue-500"></i> Complete your profile</h2>
-        <p class="text-sm text-slate-400 mb-6">Please provide your custom identity parameters details before exploring workspaces collaboration parameters.</p>
-        <hr class="border-slate-700 mb-6">
-        
-        <div class="flex flex-col items-center gap-3 mb-6">
-            <img id="mandatory-pfp-view" class="w-24 h-24 rounded-full object-cover border-2 border-blue-500 bg-slate-800" src="https://www.w3schools.com/howto/img_avatar.png" alt="Profile Picture">
-            <input type="file" id="mandatory-pfp-input" accept="image/*" class="hidden">
-            <button class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded text-xs font-semibold tracking-wide transition" onclick="document.getElementById('mandatory-pfp-input').click()">Choose Profile Picture</button>
-            <span class="text-[10px] text-slate-400">Cloudinary Upload Optimization Matrix Enabled</span>
+<!-- ================= NAV ================= -->
+<nav>
+  <div style="display:flex;align-items:center;gap:15px;">
+    <div class="hamburger-menu" id="hamburger" onclick="openSidebar()"><i class="fas fa-bars"></i></div>
+    <div class="logo"><i class="fas fa-people-arrows"></i> Synchronous</div>
+  </div>
+  <div id="nav-user" class="hidden" style="display:flex;align-items:center;gap:15px;">
+    <span id="top-user-name" style="font-weight:600;cursor:pointer;" onclick="openProfileSidebar()"></span>
+    <img id="top-user-pfp" class="avatar-sm" style="cursor:pointer;" onclick="openProfileSidebar()">
+    <button class="btn" style="padding:8px 14px;background:#fee2e2;color:#b91c1c;" onclick="logout()"><i class="fas fa-sign-out-alt"></i></button>
+  </div>
+</nav>
+
+<!-- ================= AUTH ================= -->
+<div id="auth-section" class="auth-container fade-in">
+  <h2 id="auth-title" style="text-align:center;margin-bottom:5px;">Welcome Back!</h2>
+  <p style="text-align:center;color:var(--text-muted);font-size:.9rem;margin-bottom:25px;">Sign in to Synchronous</p>
+
+  <div class="input-group"><label>Email Address</label><input type="email" id="email" placeholder="name@domain.com"></div>
+  <div class="input-group"><label>Password</label><input type="password" id="password" placeholder="••••••••"></div>
+
+  <button id="auth-btn" class="btn btn-primary" onclick="handleAuth()">Login</button>
+
+  <div class="experimental-warning">
+    <i class="fas fa-exclamation-triangle" style="margin-top:2px;"></i>
+    <span>Email and password login or signup is completely experimental, if you want stability and speed, use Google authentication.</span>
+  </div>
+
+  <button class="btn btn-google" onclick="handleGoogleAuth()">
+    <img src="https://fonts.gstatic.com/s/i/productlogos/googleg/v6/24px.svg" alt="G" style="width:18px;"> Continue with Google
+  </button>
+
+  <button id="forgot-password-btn" class="btn btn-secondary" style="margin-top:10px;" onclick="handleForgotPassword()">Forgot Password</button>
+
+  <p style="text-align:center;margin-top:20px;">
+    <a href="#" id="auth-toggle-link" onclick="toggleAuthMode()" style="color:var(--primary);text-decoration:none;font-weight:600;">
+      <span id="auth-toggle-text">New to the app? What are you even waiting for? Sign up now!</span>
+    </a>
+  </p>
+</div>
+
+<!-- ================= MANDATORY PROFILE DRAWER ================= -->
+<div class="profile-drawer" id="mandatory-profile-drawer">
+  <h2 style="margin-bottom:10px;"><i class="fas fa-user-edit"></i> Complete your profile</h2>
+  <p style="color:var(--text-muted);font-size:.85rem;margin-bottom:20px;">You must fill in all the details below before you can use Synchronous.</p>
+  <hr style="opacity:.1;margin-bottom:20px;">
+  <div class="pfp-container">
+    <img id="mandatory-pfp-view" class="pfp-preview" src="https://www.w3schools.com/howto/img_avatar.png">
+    <input type="file" id="mandatory-pfp-input" accept="image/*" style="display:none;">
+    <button class="btn" style="padding:6px 12px;font-size:.8rem;background:#e2e8f0;" onclick="document.getElementById('mandatory-pfp-input').click()">Choose Profile Picture</button>
+  </div>
+  <div class="input-group"><label>Display Name</label><input type="text" id="mandatory-display-name" placeholder="John Doe"></div>
+  <div class="input-group"><label>Description</label><textarea id="mandatory-description" rows="3" placeholder="Tell us about yourself..."></textarea></div>
+  <button class="btn btn-primary" onclick="saveMandatoryProfile()">Save</button>
+</div>
+
+<!-- ================= PROFILE / APP SIDEBAR (settings, right side quick) ================= -->
+<div class="right-drawer" id="profile-sidebar">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+    <h2><i class="fas fa-user"></i> Your Profile</h2>
+    <button class="btn" style="padding:8px;background:rgba(0,0,0,.05);border-radius:50%;" onclick="closeAllDrawers()"><i class="fas fa-times"></i></button>
+  </div>
+  <div class="pfp-container">
+    <img id="settings-pfp-view" class="pfp-preview" src="">
+    <input type="file" id="settings-pfp-input" accept="image/*" style="display:none;">
+    <button class="btn" style="padding:6px 12px;font-size:.8rem;background:#e2e8f0;" onclick="document.getElementById('settings-pfp-input').click()">Change Picture</button>
+  </div>
+  <div class="input-group"><label>Display Name</label><input type="text" id="settings-display-name"></div>
+  <div class="input-group"><label>Description</label><textarea id="settings-description" rows="3"></textarea></div>
+  <button class="btn btn-primary" onclick="saveSettingsProfile()">Save Updates</button>
+</div>
+
+<!-- ================= MAIN SIDEBAR (workspaces) ================= -->
+<div class="sidebar" id="main-sidebar">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+    <h2><i class="fas fa-layer-group"></i> Workspaces</h2>
+    <button class="btn" style="padding:8px;background:rgba(0,0,0,.05);border-radius:50%;" onclick="closeAllDrawers()"><i class="fas fa-times"></i></button>
+  </div>
+  <button class="btn btn-primary" style="margin-bottom:8px;" onclick="openCreateWorkspaceModal()"><i class="fas fa-plus"></i> Create workspace</button>
+  <button class="btn btn-secondary" style="margin-bottom:20px;" onclick="openJoinWorkspaceModal()"><i class="fas fa-sign-in-alt"></i> Join workspace</button>
+  <hr style="opacity:.1;margin-bottom:16px;">
+  <div id="sidebar-ws-list"></div>
+</div>
+
+<!-- ================= CREATE WORKSPACE DRAWER ================= -->
+<div class="right-drawer" id="create-ws-drawer">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+    <h2><i class="fas fa-plus-circle"></i> Create workspace</h2>
+    <button class="btn" style="padding:8px;background:rgba(0,0,0,.05);border-radius:50%;" onclick="closeAllDrawers()"><i class="fas fa-times"></i></button>
+  </div>
+  <div class="pfp-container">
+    <img id="ws-icon-view" class="pfp-preview" style="border-radius:14px;" src="https://placehold.co/100x100/e2e8f0/64748b?text=Icon">
+    <input type="file" id="ws-icon-input" accept="image/*" style="display:none;">
+    <button class="btn" style="padding:6px 12px;font-size:.8rem;background:#e2e8f0;" onclick="document.getElementById('ws-icon-input').click()">Choose Workspace Icon</button>
+  </div>
+  <div class="input-group"><label>Workspace Name</label><input type="text" id="ws-name-input" placeholder="Team Rocket"></div>
+  <div class="input-group"><label>Description</label><textarea id="ws-desc-input" rows="3" placeholder="What's this workspace for?"></textarea></div>
+  <button class="btn btn-primary" onclick="createWorkspace()">Create workspace</button>
+</div>
+
+<!-- ================= JOIN WORKSPACE DRAWER ================= -->
+<div class="right-drawer" id="join-ws-drawer">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+    <h2><i class="fas fa-sign-in-alt"></i> Join workspace</h2>
+    <button class="btn" style="padding:8px;background:rgba(0,0,0,.05);border-radius:50%;" onclick="closeAllDrawers()"><i class="fas fa-times"></i></button>
+  </div>
+  <div class="input-group"><label>6-digit workspace code</label><input type="text" id="join-code-input" maxlength="6" placeholder="482913"></div>
+  <button class="btn btn-primary" onclick="joinWorkspaceByCode()">Join</button>
+</div>
+
+<!-- ================= MAIN APP LAYOUT ================= -->
+<div id="app-layout" class="app-layout hidden">
+  <div class="main-content" id="main-content">
+    <div class="main-empty" id="empty-state">Open the sidebar to start collaborating</div>
+    <div id="workspace-view" class="hidden"></div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getDatabase, ref, set, push, get, onValue, update, remove, onDisconnect, child } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCzV75WoXRkbX9Davc_3Vr853Gvej1WEww",
+  authDomain: "serverfluxionary.firebaseapp.com",
+  databaseURL: "https://serverfluxionary-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "serverfluxionary",
+  storageBucket: "serverfluxionary.firebasestorage.app",
+  messagingSenderId: "693102090542",
+  appId: "1:693102090542:web:59298f926dd0257ce682bf"
+};
+const cloudinaryConfig = { cloudName: "dufbzl68g", uploadPreset: "ml_default" };
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
+const googleProvider = new GoogleAuthProvider();
+
+let isLoginMode = true;
+let currentUserProfile = null;
+let mandatoryPfpUrl = "https://www.w3schools.com/howto/img_avatar.png";
+let settingsPfpUrl = "";
+let wsIconUrl = "";
+let activeWorkspaceId = null;
+let activeWorkspaceUnsubs = [];
+let mediaRecorder = null, recordedChunks = [], recordStartTime = null, recordTimerInterval = null;
+
+// ---------- helpers ----------
+window.showToast = (msg, type='success') => {
+  const c = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle';
+  t.innerHTML = `<i class="fas ${icon}" style="color:var(--${type})"></i><span>${msg}</span>`;
+  c.appendChild(t);
+  setTimeout(()=>t.remove(), 5000);
+};
+
+async function uploadToCloudinary(file, resourceType='auto') {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', cloudinaryConfig.uploadPreset);
+  try {
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudinaryConfig.cloudName}/${resourceType}/upload`, { method:'POST', body: formData });
+    const data = await res.json();
+    if (data.secure_url) return data.secure_url;
+    showToast("Upload failed: " + (data.error ? data.error.message : 'unknown error'), 'error');
+    return null;
+  } catch(err) {
+    showToast("Upload failed due to a network issue", 'error');
+    return null;
+  }
+}
+
+function gen6DigitCode(){ return String(Math.floor(100000 + Math.random()*900000)); }
+
+// ---------- drawers ----------
+window.closeAllDrawers = () => {
+  if (auth.currentUser && (!currentUserProfile || !currentUserProfile.profileCompleted)) {
+    showToast("Please complete your profile first", "error");
+    return;
+  }
+  ['main-sidebar','profile-sidebar','create-ws-drawer','join-ws-drawer'].forEach(id=>document.getElementById(id).classList.remove('active'));
+  document.getElementById('mandatory-profile-drawer').classList.remove('active');
+  document.getElementById('drawer-overlay').classList.remove('active');
+};
+window.openSidebar = () => {
+  if (!auth.currentUser) return;
+  document.getElementById('main-sidebar').classList.add('active');
+  document.getElementById('drawer-overlay').classList.add('active');
+};
+window.openProfileSidebar = () => {
+  if (!auth.currentUser) return;
+  document.getElementById('settings-display-name').value = currentUserProfile?.displayName || '';
+  document.getElementById('settings-description').value = currentUserProfile?.description || '';
+  const pic = currentUserProfile?.profilePic || 'https://www.w3schools.com/howto/img_avatar.png';
+  document.getElementById('settings-pfp-view').src = pic;
+  settingsPfpUrl = currentUserProfile?.profilePic || '';
+  document.getElementById('profile-sidebar').classList.add('active');
+  document.getElementById('drawer-overlay').classList.add('active');
+};
+window.openCreateWorkspaceModal = () => {
+  document.getElementById('ws-name-input').value='';
+  document.getElementById('ws-desc-input').value='';
+  document.getElementById('ws-icon-view').src='https://placehold.co/100x100/e2e8f0/64748b?text=Icon';
+  wsIconUrl='';
+  document.getElementById('create-ws-drawer').classList.add('active');
+  document.getElementById('drawer-overlay').classList.add('active');
+};
+window.openJoinWorkspaceModal = () => {
+  document.getElementById('join-code-input').value='';
+  document.getElementById('join-ws-drawer').classList.add('active');
+  document.getElementById('drawer-overlay').classList.add('active');
+};
+
+// ---------- auth ----------
+window.toggleAuthMode = () => {
+  isLoginMode = !isLoginMode;
+  document.getElementById('auth-title').innerText = isLoginMode ? "Welcome Back!" : "Create Account";
+  document.getElementById('auth-toggle-text').innerText = isLoginMode ? "New to the app? What are you even waiting for? Sign up now!" : "Already have an account? Login instead.";
+  document.getElementById('auth-btn').innerText = isLoginMode ? "Login" : "Sign Up";
+  document.getElementById('forgot-password-btn').classList.toggle('hidden', !isLoginMode);
+};
+
+window.handleAuth = async () => {
+  const email = document.getElementById('email').value.trim();
+  const pass = document.getElementById('password').value;
+  if (!email || !pass) return showToast("Please enter both email and password", "error");
+  try {
+    if (isLoginMode) {
+      await signInWithEmailAndPassword(auth, email, pass);
+      showToast("Logged in successfully");
+    } else {
+      await createUserWithEmailAndPassword(auth, email, pass);
+      showToast("Account created successfully");
+    }
+  } catch (err) { showToast(err.message, "error"); }
+};
+
+window.handleGoogleAuth = async () => {
+  try { await signInWithPopup(auth, googleProvider); showToast("Authenticated via Google"); }
+  catch (err) { showToast(err.message, "error"); }
+};
+
+window.handleForgotPassword = async () => {
+  const email = document.getElementById('email').value.trim();
+  if (!email) return showToast("Enter your email above first", "error");
+  try { await sendPasswordResetEmail(auth, email); showToast("Password reset email sent"); }
+  catch (err) { showToast(err.message, "error"); }
+};
+
+window.logout = () => {
+  const user = auth.currentUser;
+  detachWorkspaceListeners();
+  if (user) {
+    update(ref(db, `users/${user.uid}`), { online:false }).finally(()=> signOut(auth).then(()=>window.location.reload()));
+  } else { signOut(auth).then(()=>window.location.reload()); }
+};
+
+// ---------- profile pic uploads ----------
+document.getElementById('mandatory-pfp-input').addEventListener('change', async (e)=>{
+  const file = e.target.files[0]; if(!file) return;
+  const url = await uploadToCloudinary(file, 'image');
+  if (url) { mandatoryPfpUrl = url; document.getElementById('mandatory-pfp-view').src = url; }
+});
+document.getElementById('settings-pfp-input').addEventListener('change', async (e)=>{
+  const file = e.target.files[0]; if(!file) return;
+  const url = await uploadToCloudinary(file, 'image');
+  if (url) { settingsPfpUrl = url; document.getElementById('settings-pfp-view').src = url; }
+});
+document.getElementById('ws-icon-input').addEventListener('change', async (e)=>{
+  const file = e.target.files[0]; if(!file) return;
+  const url = await uploadToCloudinary(file, 'image');
+  if (url) { wsIconUrl = url; document.getElementById('ws-icon-view').src = url; }
+});
+
+window.saveMandatoryProfile = async () => {
+  const user = auth.currentUser; if(!user) return;
+  const dName = document.getElementById('mandatory-display-name').value.trim();
+  const desc = document.getElementById('mandatory-description').value.trim();
+  if (!dName || !desc) return showToast("All fields are required", "error");
+  await update(ref(db, `users/${user.uid}`), {
+    displayName:dName, description:desc, profilePic:mandatoryPfpUrl, profileCompleted:true, email:user.email
+  });
+  showToast("Profile saved!");
+};
+
+window.saveSettingsProfile = async () => {
+  const user = auth.currentUser; if(!user) return;
+  const dName = document.getElementById('settings-display-name').value.trim();
+  const desc = document.getElementById('settings-description').value.trim();
+  if (!dName || !desc) return showToast("All fields are required", "error");
+  await update(ref(db, `users/${user.uid}`), { displayName:dName, description:desc, profilePic: settingsPfpUrl || mandatoryPfpUrl });
+  showToast("Profile updated");
+  closeAllDrawers();
+};
+
+// ---------- auth state ----------
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    document.getElementById('auth-section').classList.add('hidden');
+    const presenceRef = ref(db, `users/${user.uid}/online`);
+    set(presenceRef, true);
+    onDisconnect(presenceRef).set(false);
+
+    onValue(ref(db, `users/${user.uid}`), (snap) => {
+      const profile = snap.val();
+      currentUserProfile = profile;
+      if (!profile || !profile.profileCompleted) {
+        document.getElementById('mandatory-profile-drawer').classList.add('active');
+        document.getElementById('drawer-overlay').classList.add('active');
+        document.getElementById('app-layout').classList.add('hidden');
+        document.getElementById('nav-user').classList.add('hidden');
+      } else {
+        document.getElementById('mandatory-profile-drawer').classList.remove('active');
+        if (![...document.querySelectorAll('.right-drawer,.sidebar')].some(d=>d.classList.contains('active'))) {
+          document.getElementById('drawer-overlay').classList.remove('active');
+        }
+        document.getElementById('nav-user').classList.remove('hidden');
+        document.getElementById('top-user-name').innerText = profile.displayName;
+        document.getElementById('top-user-pfp').src = profile.profilePic;
+        document.getElementById('app-layout').classList.remove('hidden');
+        loadSidebarWorkspaces(user.uid);
+        watchMyMentions(user.uid);
+      }
+    });
+  } else {
+    document.getElementById('auth-section').classList.remove('hidden');
+    document.getElementById('app-layout').classList.add('hidden');
+    document.getElementById('nav-user').classList.add('hidden');
+    closeAllDrawers();
+  }
+});
+
+// ---------- workspace: create ----------
+window.createWorkspace = async () => {
+  const user = auth.currentUser; if(!user) return;
+  const name = document.getElementById('ws-name-input').value.trim();
+  const desc = document.getElementById('ws-desc-input').value.trim();
+  if (!name) return showToast("Workspace name is required", "error");
+  const icon = wsIconUrl || 'https://placehold.co/100x100/2563eb/ffffff?text=' + encodeURIComponent(name[0].toUpperCase());
+  const code = gen6DigitCode();
+  const wsRef = push(ref(db, 'workspaces'));
+  const wsId = wsRef.key;
+  await set(wsRef, {
+    name, description:desc, icon, code, ownerUid:user.uid,
+    adminApprovalEnabled:false, createdAt:new Date().toISOString()
+  });
+  await set(ref(db, `workspaceCodes/${code}`), wsId);
+  await set(ref(db, `workspaces/${wsId}/members/${user.uid}`), {
+    displayName: currentUserProfile.displayName, profilePic: currentUserProfile.profilePic, tag:'', joinedAt:new Date().toISOString()
+  });
+  await set(ref(db, `users/${user.uid}/workspaces/${wsId}`), true);
+  showToast("Workspace created!");
+  closeAllDrawers();
+  openWorkspace(wsId);
+};
+
+// ---------- workspace: join ----------
+window.joinWorkspaceByCode = async () => {
+  const user = auth.currentUser; if(!user) return;
+  const code = document.getElementById('join-code-input').value.trim();
+  if (code.length !== 6) return showToast("Enter a valid 6-digit code", "error");
+  const codeSnap = await get(ref(db, `workspaceCodes/${code}`));
+  if (!codeSnap.exists()) { showToast("It seems to be that this workspace doesn't exist in our database", "error"); return; }
+  const wsId = codeSnap.val();
+  const wsSnap = await get(ref(db, `workspaces/${wsId}`));
+  const ws = wsSnap.val();
+  if (!ws) { showToast("It seems to be that this workspace doesn't exist in our database", "error"); return; }
+
+  const memberSnap = await get(ref(db, `workspaces/${wsId}/members/${user.uid}`));
+  if (memberSnap.exists()) { showToast("You're already a member of this workspace"); closeAllDrawers(); openWorkspace(wsId); return; }
+
+  if (ws.adminApprovalEnabled) {
+    await set(ref(db, `workspaces/${wsId}/pendingRequests/${user.uid}`), {
+      uid:user.uid, displayName:currentUserProfile.displayName, profilePic:currentUserProfile.profilePic, requestedAt:new Date().toISOString()
+    });
+    showToast("Request sent successfully");
+  } else {
+    await set(ref(db, `workspaces/${wsId}/members/${user.uid}`), {
+      displayName: currentUserProfile.displayName, profilePic: currentUserProfile.profilePic, tag:'', joinedAt:new Date().toISOString()
+    });
+    await set(ref(db, `users/${user.uid}/workspaces/${wsId}`), true);
+    showToast(`Joined ${ws.name}!`);
+    openWorkspace(wsId);
+  }
+  closeAllDrawers();
+};
+
+// ---------- sidebar workspace list ----------
+function loadSidebarWorkspaces(uid) {
+  onValue(ref(db, `users/${uid}/workspaces`), (snap) => {
+    const ids = snap.val() ? Object.keys(snap.val()) : [];
+    const container = document.getElementById('sidebar-ws-list');
+    container.innerHTML = '';
+    if (ids.length === 0) {
+      container.innerHTML = `<p style="color:var(--text-muted);font-size:.85rem;text-align:center;padding:20px 0;">No workspaces yet</p>`;
+      return;
+    }
+    ids.forEach(wsId => {
+      onValue(ref(db, `workspaces/${wsId}`), (wsSnap) => {
+        const ws = wsSnap.val();
+        if (!ws) return;
+        let item = document.getElementById('sb-ws-' + wsId);
+        if (!item) {
+          item = document.createElement('div');
+          item.id = 'sb-ws-' + wsId;
+          item.className = 'ws-list-item';
+          container.appendChild(item);
+        }
+        item.className = 'ws-list-item' + (activeWorkspaceId === wsId ? ' active-ws' : '');
+        item.onclick = () => { openWorkspace(wsId); openSidebar(); };
+        item.innerHTML = `<img class="ws-icon" src="${ws.icon}"><div style="overflow:hidden;"><div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${ws.name}</div><div style="font-size:.75rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${ws.description||''}</div></div>`;
+      });
+    });
+  });
+}
+
+// ---------- mentions watcher ----------
+function watchMyMentions(uid) {
+  onValue(ref(db, `users/${uid}/mentions`), (snap) => {
+    const data = snap.val(); if (!data) return;
+    Object.keys(data).forEach(mid => {
+      const m = data[mid];
+      if (!m.seen) {
+        showToast(`You got mentioned by ${m.fromDisplayName} in the workspace ${m.workspaceName} at exactly ${m.timestamp}`);
+        update(ref(db, `users/${uid}/mentions/${mid}`), { seen:true });
+      }
+    });
+  });
+}
+
+function detachWorkspaceListeners() {
+  activeWorkspaceUnsubs.forEach(fn => { try { fn(); } catch(e){} });
+  activeWorkspaceUnsubs = [];
+}
+
+// ================= WORKSPACE VIEW =================
+window.openWorkspace = async (wsId) => {
+  detachWorkspaceListeners();
+  activeWorkspaceId = wsId;
+  document.getElementById('empty-state').classList.add('hidden');
+  const view = document.getElementById('workspace-view');
+  view.classList.remove('hidden');
+
+  const wsSnap = await get(ref(db, `workspaces/${wsId}`));
+  const ws = wsSnap.val();
+  if (!ws) { showToast("Workspace not found", "error"); return; }
+  const user = auth.currentUser;
+  const isAdmin = ws.ownerUid === user.uid;
+
+  view.innerHTML = `
+    <div class="ws-header">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <img class="ws-icon" src="${ws.icon}" style="width:52px;height:52px;">
+        <div>
+          <div style="font-weight:800;font-size:1.3rem;">${ws.name}</div>
+          <div style="font-size:.85rem;color:var(--text-muted);">${ws.description||''}</div>
         </div>
-
-        <div class="mb-5">
-            <label class="block text-xs font-semibold uppercase text-slate-400 tracking-wider mb-2">Display Name</label>
-            <input type="text" id="mandatory-display-name" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:border-blue-500 outline-none text-sm" placeholder="e.g. John Doe">
-        </div>
-
-        <div class="mb-6">
-            <label class="block text-xs font-semibold uppercase text-slate-400 tracking-wider mb-2">Description / Bio</label>
-            <textarea id="mandatory-description" rows="4" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:border-blue-500 outline-none text-sm" placeholder="Tell us about your specialization metrics..."></textarea>
-        </div>
-
-        <button id="mandatory-save-btn" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-lg shadow-blue-500/20 transition transform active:scale-[0.98]">Save & Continue Workspace Discovery</button>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-secondary" style="width:auto;" onclick="openInviteDrawer('${wsId}')"><i class="fas fa-user-plus"></i> Invite</button>
+        ${isAdmin ? `<button class="btn btn-secondary" style="width:auto;" onclick="openConfigureDrawer('${wsId}')"><i class="fas fa-cog"></i> Configure</button>` : ''}
+      </div>
     </div>
-
-    <!-- MAIN CORE FRAMEWORK INTERFACE MATRIX ROUTINE -->
-    <div id="app-wrapper" class="flex w-screen h-screen overflow-hidden">
-        
-        <!-- AUTHENTICATION LAYOUT ENGINE FOR INITIAL VISITS -->
-        <div id="auth-section" class="flex flex-col items-center justify-center w-full h-full bg-[#0f172a] p-4 z-50">
-            <div class="w-full max-w-md bg-[#1e293b] p-8 rounded-2xl shadow-2xl border border-slate-800 transition transform duration-300">
-                <h2 id="auth-title" class="text-3xl font-extrabold text-white text-center mb-1 tracking-tight">Welcome Back!</h2>
-                <p id="auth-subtitle" class="text-slate-400 text-center text-sm mb-6">Synchronous Enterprise Collaboration Hub Protocol</p>
-                
-                <div class="space-y-4 mb-5">
-                    <div>
-                        <label class="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">Email Address</label>
-                        <input type="email" id="auth-email" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:border-blue-500 outline-none transition" placeholder="name@domain.com">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">Password</label>
-                        <input type="password" id="auth-password" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:border-blue-500 outline-none transition" placeholder="••••••••">
-                    </div>
-                </div>
-
-                <button id="auth-submit-btn" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-lg shadow-blue-600/20 transition mb-4">Sign In</button>
-                
-                <div class="experimental-warning p-3 rounded-lg text-xs flex gap-2 items-start mb-4">
-                    <i class="fas fa-exclamation-triangle mt-0.5"></i>
-                    <span>Email and password login or signup is completely experimental, if you want stability and speed. Use Google authentication</span>
-                </div>
-
-                <button id="auth-google-btn" class="w-full py-2.5 bg-white hover:bg-slate-100 text-slate-800 font-bold rounded-lg flex items-center justify-center gap-2 border border-slate-300 transition text-sm mb-4">
-                    <img src="https://fonts.gstatic.com/s/i/productlogos/googleg/v6/24px.svg" alt="G" class="w-5 h-5"> Continue with Google
-                </button>
-
-                <div class="flex flex-col items-center gap-3 text-xs text-center text-slate-400 mt-2">
-                    <button id="auth-forgot-link" class="text-blue-400 hover:underline font-medium">Forgot Password?</button>
-                    <div class="w-full border-t border-slate-700/50 my-1"></div>
-                    <p id="auth-toggle-container">
-                        New to the app? What are you even waiting for? 
-                        <a href="#" id="auth-toggle-link" class="text-blue-400 font-bold block mt-1 hover:underline text-sm">Sign up now!</a>
-                    </p>
-                </div>
-            </div>
-        </div>
-
-        <!-- APPLICATION COLLABORATION DASHBOARD DELEGATE PANEL (HIDDEN TILL SIGNED IN) -->
-        <div id="dashboard-section" class="hidden flex w-full h-full bg-[#0f172a]">
-            
-            <!-- APPLICATION SIDEBAR REGISTRY CONTROL -->
-            <div class="custom-sidebar h-full bg-[#1e293b] border-r border-slate-800 flex flex-col justify-between text-slate-200">
-                <div class="flex flex-col overflow-y-auto flex-1 p-4">
-                    <!-- Brand Banner Header -->
-                    <div class="flex items-center justify-between mb-6 pb-4 border-b border-slate-800">
-                        <span class="text-xl font-extrabold tracking-tight text-blue-500 flex items-center gap-2"><i class="fas fa-sync-alt animate-spin-slow"></i> Synchronous</span>
-                        <div class="flex items-center gap-2 bg-slate-900 px-2 py-1 rounded border border-slate-800 text-[10px] font-mono text-slate-400">v2026.1</div>
-                    </div>
-
-                    <!-- Workspaces Direct Selection Submenu -->
-                    <div class="mb-4">
-                        <div class="flex items-center justify-between text-xs font-semibold uppercase text-slate-400 tracking-wider mb-2 px-1">
-                            <span>Workspaces</span>
-                            <i class="fas fa-layer-group"></i>
-                        </div>
-                        <div id="sidebar-workspaces-list" class="space-y-1">
-                            <!-- Populated in realtime -->
-                        </div>
-                    </div>
-
-                    <hr class="border-slate-800 my-4">
-
-                    <!-- Actions Panel Command Matrix -->
-                    <div class="space-y-2">
-                        <button onclick="openCreateWorkspaceModal()" class="w-full py-2.5 px-4 bg-blue-600/10 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-500/20 rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition">
-                            <i class="fas fa-plus-circle"></i> Create Workspace
-                        </button>
-                        <button onclick="openJoinWorkspaceModal()" class="w-full py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition">
-                            <i class="fas fa-sign-in-alt"></i> Join Workspace
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Footer Account Segment Widget Holder -->
-                <div class="p-4 bg-slate-900 border-t border-slate-800 flex items-center justify-between gap-3">
-                    <div class="flex items-center gap-2.5 overflow-hidden">
-                        <img id="user-footer-pfp" class="w-9 h-9 rounded-full object-cover border border-slate-700 bg-slate-800" src="https://www.w3schools.com/howto/img_avatar.png" alt="User Image">
-                        <div class="flex flex-col min-w-0">
-                            <span id="user-footer-name" class="text-xs font-bold text-white truncate">Loading Profile...</span>
-                            <span id="user-footer-uid" class="text-[9px] text-slate-500 font-mono truncate">UID:...</span>
-                        </div>
-                    </div>
-                    <button id="app-logout-btn" class="p-2.5 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition" title="Logout Session">
-                        <i class="fas fa-power-off text-sm"></i>
-                    </button>
-                </div>
-            </div>
-
-            <!-- MAIN LIVE CANVAS CONTROLLER CONTAINER AREA -->
-            <div id="workspace-content-pane" class="flex-1 h-full flex flex-col overflow-hidden relative">
-                
-                <!-- IDLE VIEW PRE-SELECTION LANDING SPLASH SCREEN -->
-                <div id="idle-screen" class="absolute inset-0 bg-[#0f172a] z-40 flex flex-col items-center justify-center text-center p-6 transition-all">
-                    <div class="w-20 h-20 rounded-full bg-slate-800/50 flex items-center justify-center text-blue-500 text-3xl mb-4 border border-slate-800 animate-pulse">
-                        <i class="fas fa-folder-open"></i>
-                    </div>
-                    <h3 class="text-xl font-bold text-white mb-1">Open the sidebar to start collaborating</h3>
-                    <p class="text-sm text-slate-400 max-w-sm">Select an active workspace cluster from your navigation repository registry or generate a custom ecosystem token entry point to instantly bridge runtime interactions.</p>
-                </div>
-
-                <!-- ACTIVE LIVE WORKSPACE COMPONENT DOM MATRIX HOOKS -->
-                <div id="active-workspace-layer" class="flex-1 flex flex-col h-full overflow-hidden">
-                    
-                    <!-- WORKSPACE INTERFACE HEADER METRICS -->
-                    <div class="h-16 bg-[#1e293b] border-b border-slate-800 px-6 flex items-center justify-between shrink-0">
-                        <div class="flex items-center gap-3 min-w-0">
-                            <div id="ws-header-icon" class="w-9 h-9 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-blue-400 text-lg font-bold">W</div>
-                            <div class="flex flex-col min-w-0">
-                                <h2 id="ws-header-name" class="text-sm font-bold text-white truncate">Workspace Environment</h2>
-                                <p id="ws-header-desc" class="text-[11px] text-slate-400 truncate">Description telemetry metrics matrix</p>
-                            </div>
-                        </div>
-
-                        <!-- Top Toolbar Command Interface Actions Layout -->
-                        <div class="flex items-center gap-2">
-                            <div class="flex items-center gap-1.5 bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800 font-mono text-xs">
-                                <span class="text-slate-500 text-[10px] uppercase">Pin:</span>
-                                <span id="ws-header-pin" class="text-blue-400 font-bold tracking-widest">000000</span>
-                                <button onclick="navigator.clipboard.writeText(document.getElementById('ws-header-pin').innerText); showToast('Workspace PIN copied!');" class="text-slate-500 hover:text-slate-300 transition pl-1"><i class="fas fa-copy text-[10px]"></i></button>
-                            </div>
-
-                            <button onclick="openInviteOptionsModal()" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-lg flex items-center gap-1.5 transition">
-                                <i class="fas fa-user-plus text-[11px]"></i> Invite
-                            </button>
-
-                            <button id="ws-admin-config-btn" onclick="openConfigureWorkspaceModal()" class="hidden px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs rounded-lg flex items-center gap-1.5 transition">
-                                <i class="fas fa-sliders-h text-[11px]"></i> Configure
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- WORKSPACE INNER SUB-PANEL SYSTEM DELEGATE SWITCHBOARD -->
-                    <div class="flex-1 flex overflow-hidden">
-                        
-                        <!-- LEFT LAYER: COMMUNICATIVE DISCORD WORKSPACE MODULE CHAT & STREAMING ARTIFACTS -->
-                        <div class="w-1/3 min-w-[340px] border-r border-slate-800 flex flex-col h-full bg-[#10192e]">
-                            <div class="p-3 bg-slate-900/60 border-b border-slate-800 flex items-center justify-between text-xs font-bold tracking-wider text-slate-400 uppercase">
-                                <span>Group Broadcast Stream</span>
-                                <i class="fas fa-comments text-blue-500"></i>
-                            </div>
-
-                            <!-- Realtime Instant Messages Scroll Feed Container Grid -->
-                            <div id="chat-messages-scroll" class="flex-1 overflow-y-auto p-4 space-y-4">
-                                <!-- Populated dynamically by message event tracking observers -->
-                            </div>
-
-                            <!-- Extended Workspace Media Controls Container Input Matrix Panel -->
-                            <div class="p-3 bg-slate-900/80 border-t border-slate-800 space-y-2 relative">
-                                <!-- Mention popup anchor helper context list item frame view -->
-                                <div id="mention-autocomplete-box" class="absolute left-3 right-3 bottom-full mb-1 bg-[#1e293b] border border-slate-700 rounded-lg max-h-40 overflow-y-auto shadow-2xl hidden z-50">
-                                    <!-- Populated on @ matching stream trigger -->
-                                </div>
-
-                                <div class="flex items-center gap-2">
-                                    <button onclick="document.getElementById('chat-file-input').click()" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-lg transition" title="Attach Media Assets (Max 70MB)">
-                                        <i class="fas fa-paperclip text-sm"></i>
-                                    </button>
-                                    <input type="file" id="chat-file-input" class="hidden" accept="image/*,video/*,application/*">
-
-                                    <button onclick="toggleCameraCapturePanel()" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-lg transition" title="Trigger Live Snapshot Matrix Cam">
-                                        <i class="fas fa-camera text-sm"></i>
-                                    </button>
-
-                                    <!-- Voice Note Capture Interface Node Elements -->
-                                    <button id="voice-record-btn" onclick="toggleVoiceRecordingLifecycle()" class="p-2 bg-slate-800 hover:bg-red-500 text-slate-400 hover:text-white rounded-lg transition" title="Record Voice Audio Note (Max 8 Min)">
-                                        <i class="fas fa-microphone text-sm"></i>
-                                    </button>
-                                    <span id="voice-timer-label" class="text-[11px] font-mono font-bold text-red-400 hidden">0:00</span>
-                                </div>
-
-                                <!-- Camera Preview Overlay HUD -->
-                                <div id="camera-capture-panel" class="hidden bg-slate-950 p-2 rounded-lg border border-slate-800 space-y-2">
-                                    <video id="camera-video-stream" autoplay muted playsinline class="w-full h-32 object-cover bg-black rounded border border-slate-800"></video>
-                                    <div class="flex justify-end gap-1.5">
-                                        <button onclick="executeCameraCaptureSnapshot()" class="px-2 py-1 bg-blue-600 hover:bg-blue-700 rounded text-[11px] font-bold text-white">Capture Photo</button>
-                                        <button onclick="toggleCameraCapturePanel()" class="px-2 py-1 bg-slate-800 hover:bg-slate-700 rounded text-[11px] text-slate-400">Cancel</button>
-                                    </div>
-                                </div>
-
-                                <div class="flex gap-2">
-                                    <input type="text" id="chat-message-input" class="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-blue-500" placeholder="Type a message... Use @ to mention someone">
-                                    <button onclick="transmitWorkspaceChatMessage()" class="px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-bold transition"><i class="fas fa-paper-plane"></i></button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- MIDDLE COMPONENT LAYER AREA: TAB INTERACTION REGISTRY (WHITEBOARD / SHARED TEXTBOXES) -->
-                        <div class="flex-1 flex flex-col h-full bg-[#0f172a]">
-                            <div class="h-11 bg-slate-900 border-b border-slate-800 px-4 flex items-center justify-between shrink-0">
-                                <div class="flex items-center gap-2">
-                                    <button onclick="switchMiddleWorkspaceTab('whiteboard')" id="tab-btn-whiteboard" class="px-3 py-1 text-xs font-bold rounded-md bg-slate-800 text-blue-400 border border-slate-700">Interactive Whiteboard</button>
-                                    <button onclick="switchMiddleWorkspaceTab('textboxes')" id="tab-btn-textboxes" class="px-3 py-1 text-xs font-bold rounded-md text-slate-400 hover:bg-slate-800 hover:text-white">Shared Document Textboxes</button>
-                                </div>
-                                <div id="whiteboard-activity-badge" class="text-[11px] font-mono text-slate-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
-                                    <!-- Render drawing data metrics live -->
-                                    <span id="wb-status-text">Idle</span>
-                                </div>
-                            </div>
-
-                            <!-- SUB-VIEW AREA INTERFACES HOOK DELEGATIONS -->
-                            <div class="flex-1 relative overflow-hidden">
-                                
-                                <!-- CONTENT PANEL SUB-STAGE A: THE INTERACTIVE GRAPHICS WHITEBOARD LAYER -->
-                                <div id="pane-view-whiteboard" class="absolute inset-0 flex flex-col h-full bg-slate-950">
-                                    <div class="p-2 bg-slate-900/40 border-b border-slate-900 flex items-center gap-3 text-xs shrink-0">
-                                        <div class="flex items-center gap-1.5">
-                                            <label class="text-slate-400 font-medium">Color:</label>
-                                            <input type="color" id="wb-brush-color" class="w-6 h-6 bg-transparent border-0 cursor-pointer rounded" value="#2563eb">
-                                        </div>
-                                        <div class="flex items-center gap-1.5">
-                                            <label class="text-slate-400 font-medium">Size:</label>
-                                            <input type="range" id="wb-brush-size" min="1" max="20" value="4" class="w-20 accent-blue-500">
-                                        </div>
-                                        <button onclick="clearWhiteboardCanvasWorkspaceTrack()" class="ml-auto px-2 py-1 bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white rounded border border-red-500/20 font-semibold tracking-wide text-[10px] transition">Clear Canvas Matrix</button>
-                                    </div>
-                                    <div class="flex-1 relative bg-slate-950 overflow-hidden" id="whiteboard-canvas-bounding-container">
-                                        <canvas id="whiteboard-canvas" class="w-full h-full bg-slate-950"></canvas>
-                                    </div>
-                                </div>
-
-                                <!-- CONTENT PANEL SUB-STAGE B: REALTIME SHARED DOCUMENT CONTROLS TEXTBOXES WRAPPER -->
-                                <div id="pane-view-textboxes" class="absolute inset-0 flex flex-col h-full hidden bg-[#0c1222] p-4 overflow-y-auto">
-                                    <div class="flex items-center justify-between mb-4 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
-                                        <div class="flex flex-col">
-                                            <span class="text-xs font-bold text-white">Dynamic Workspace Text Field Matrix Arrays</span>
-                                            <span id="textbox-counter-label" class="text-[10px] text-slate-400">0 / 20 textboxes initialized</span>
-                                        </div>
-                                        <button onclick="createNewSharedTextboxInstance()" class="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white font-bold text-xs rounded-lg transition flex items-center gap-1">
-                                            <i class="fas fa-plus-square"></i> Create Textbox
-                                        </button>
-                                    </div>
-
-                                    <!-- Textbox instances deployment flexboard grid mapping -->
-                                    <div id="shared-textboxes-injection-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <!-- Active text fields injection scope logic layers -->
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- RIGHTMOST LAYER AREA: DIRECTORIES, PENDING REGISTRIES & MANAGEMENT CHANNELS -->
-                        <div class="w-80 border-l border-slate-800 flex flex-col h-full bg-[#131b2e]">
-                            
-                            <!-- PENDING ACCESS JOIN APPROVAL REQUESTS MODULE (IF ADMIN & PRIVACY ENABLED) -->
-                            <div id="ws-pending-approval-module" class="hidden border-b border-slate-800 flex flex-col max-h-[40%] bg-slate-900/40">
-                                <div class="p-3 bg-slate-900 border-b border-slate-800 flex items-center justify-between text-xs font-bold tracking-wider text-amber-400 uppercase">
-                                    <span>Pending Join Requests</span>
-                                    <span class="px-1.5 py-0.5 bg-amber-500/10 text-[10px] rounded border border-amber-500/20">Gatekeeper Active</span>
-                                </div>
-                                <div id="ws-pending-requests-scroll" class="flex-1 overflow-y-auto p-2 space-y-2">
-                                    <!-- Render approval request rows -->
-                                </div>
-                            </div>
-
-                            <!-- REGISTERED TEAM MEMBERS MEMBER DICTIONARY -->
-                            <div class="flex-1 flex flex-col overflow-hidden">
-                                <div class="p-3 bg-slate-900/80 border-b border-slate-800 space-y-2">
-                                    <div class="flex items-center justify-between text-xs font-bold tracking-wider text-slate-400 uppercase">
-                                        <span>Member Dictionary</span>
-                                        <i class="fas fa-address-book text-emerald-500"></i>
-                                    </div>
-                                    <div class="relative">
-                                        <input type="text" id="member-search-input" oninput="renderWorkspaceMemberDictionaryList()" class="w-full bg-slate-950 border border-slate-800 rounded-md pl-8 pr-2 py-1 text-xs text-white placeholder-slate-500 outline-none focus:border-emerald-500" placeholder="Search members by tag/name/uid...">
-                                        <i class="fas fa-search absolute left-2.5 top-2 text-[10px] text-slate-500"></i>
-                                    </div>
-                                </div>
-
-                                <div id="ws-members-dictionary-scroll" class="flex-1 overflow-y-auto p-3 space-y-3">
-                                    <!-- Dictionary item rows mapping layout execution -->
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div class="ws-body">
+      <div class="tab-bar">
+        <button class="tab-btn active" data-tab="members" onclick="switchWsTab('members')"><i class="fas fa-users"></i> Members</button>
+        <button class="tab-btn" data-tab="whiteboard" onclick="switchWsTab('whiteboard')"><i class="fas fa-chalkboard"></i> Whiteboard</button>
+        <button class="tab-btn" data-tab="notes" onclick="switchWsTab('notes')"><i class="fas fa-sticky-note"></i> Shared Notes</button>
+        <button class="tab-btn" data-tab="chat" onclick="switchWsTab('chat')"><i class="fas fa-comments"></i> Chat</button>
+      </div>
+      <div id="ws-tab-content"></div>
     </div>
+  `;
+  window.switchWsTab('members');
+};
 
-    <!-- UTILITY MODAL WRAPPERS COMPONENT REGISTRY CORES -->
-    <!-- Modal A: Create Workspace -->
-    <div id="modal-create-workspace" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-[5000] hidden flex items-center justify-center p-4">
-        <div class="w-full max-w-md bg-[#1e293b] rounded-xl border border-slate-800 shadow-2xl p-6 text-slate-100 animate-fadeIn">
-            <h3 class="text-lg font-bold mb-4 flex items-center gap-2 text-blue-400"><i class="fas fa-folder-plus"></i> Initialize Workspace Environment</h3>
-            <div class="space-y-4 mb-5">
-                <div>
-                    <label class="block text-xs uppercase tracking-wider text-slate-400 font-semibold mb-1">Workspace Icon String (Emoji / Letter)</label>
-                    <input type="text" id="modal-ws-icon" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white outline-none text-sm" placeholder="e.g. 🚀">
-                </div>
-                <div>
-                    <label class="block text-xs uppercase tracking-wider text-slate-400 font-semibold mb-1">Workspace Name</label>
-                    <input type="text" id="modal-ws-name" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white outline-none text-sm" placeholder="e.g. Project Orion Strategy">
-                </div>
-                <div>
-                    <label class="block text-xs uppercase tracking-wider text-slate-400 font-semibold mb-1">Description</label>
-                    <textarea id="modal-ws-desc" rows="3" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white outline-none text-sm" placeholder="Operational goals metrics outline..."></textarea>
-                </div>
-            </div>
-            <div class="flex justify-end gap-2 text-xs font-bold">
-                <button onclick="closeCreateWorkspaceModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-400">Cancel</button>
-                <button onclick="executeWorkspaceCreationSequence()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white">Create Workspace</button>
-            </div>
-        </div>
+window.switchWsTab = (tab) => {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  detachWorkspaceListeners();
+  const content = document.getElementById('ws-tab-content');
+  if (tab === 'members') renderMembersTab(content);
+  else if (tab === 'whiteboard') renderWhiteboardTab(content);
+  else if (tab === 'notes') renderNotesTab(content);
+  else if (tab === 'chat') renderChatTab(content);
+};
+
+// ---------- INVITE DRAWER ----------
+window.openInviteDrawer = async (wsId) => {
+  const wsSnap = await get(ref(db, `workspaces/${wsId}`));
+  const ws = wsSnap.val();
+  const drawer = document.createElement('div');
+  drawer.className = 'right-drawer active';
+  drawer.id = 'dynamic-invite-drawer';
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(ws.code)}`;
+  drawer.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <h2><i class="fas fa-user-plus"></i> Invite to ${ws.name}</h2>
+      <button class="btn" style="padding:8px;background:rgba(0,0,0,.05);border-radius:50%;" onclick="this.closest('.right-drawer').remove(); closeAllDrawers();"><i class="fas fa-times"></i></button>
     </div>
-
-    <!-- Modal B: Join Workspace -->
-    <div id="modal-join-workspace" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-[5000] hidden flex items-center justify-center p-4">
-        <div class="w-full max-w-sm bg-[#1e293b] rounded-xl border border-slate-800 shadow-2xl p-6 text-slate-100 animate-fadeIn">
-            <h3 class="text-lg font-bold mb-2 flex items-center gap-2 text-emerald-400"><i class="fas fa-door-open"></i> Link Into Ecosystem Cluster</h3>
-            <p class="text-xs text-slate-400 mb-4">Input the 6-digit cryptographic security code pin attached to the workspace cluster node destination platform.</p>
-            <div class="mb-5">
-                <input type="text" id="modal-join-pin" maxlength="6" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-center font-mono font-bold text-2xl text-blue-400 tracking-widest outline-none focus:border-blue-500" placeholder="000000">
-            </div>
-            <div class="flex justify-end gap-2 text-xs font-bold">
-                <button onclick="closeJoinWorkspaceModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-400">Cancel</button>
-                <button onclick="executeWorkspaceJoiningSequence()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white">Join Ecosystem</button>
-            </div>
-        </div>
+    <div class="card" style="text-align:center;">
+      <div style="font-size:.85rem;color:var(--text-muted);margin-bottom:8px;">6-digit workspace code</div>
+      <div style="font-size:2rem;font-weight:800;letter-spacing:6px;color:var(--primary);">${ws.code}</div>
     </div>
-
-    <!-- Modal C: Invite Options Panel Overlay Layout -->
-    <div id="modal-invite-options" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-[5000] hidden flex items-center justify-center p-4">
-        <div class="w-full max-w-md bg-[#1e293b] rounded-xl border border-slate-800 shadow-2xl p-6 text-slate-100 animate-fadeIn">
-            <h3 class="text-lg font-bold mb-2 flex items-center gap-2 text-blue-400"><i class="fas fa-share-nodes"></i> Share Gateway Vector Access</h3>
-            <p class="text-xs text-slate-400 mb-4">Select an interface propagation asset vector format below to dispatch reference paths into this digital workspace architecture matrix.</p>
-            
-            <div class="space-y-3 mb-6">
-                <button onclick="triggerWorkspaceLinkCopySequence()" class="w-full p-3 bg-slate-900 hover:bg-slate-800 rounded-lg border border-slate-800 text-left flex items-center justify-between transition group">
-                    <div class="flex flex-col">
-                        <span class="text-xs font-bold text-white group-hover:text-blue-400 transition">Invite By Professional Link</span>
-                        <span class="text-[10px] text-slate-500">Copies clipboard link statement formatting metrics</span>
-                    </div>
-                    <i class="fas fa-link text-slate-400 text-sm"></i>
-                </button>
-
-                <button onclick="triggerWorkspaceQRCodeGeneration()" class="w-full p-3 bg-slate-900 hover:bg-slate-800 rounded-lg border border-slate-800 text-left flex items-center justify-between transition group">
-                    <div class="flex flex-col">
-                        <span class="text-xs font-bold text-white group-hover:text-emerald-400 transition">Invite By QR Matrix Code</span>
-                        <span class="text-[10px] text-slate-500">Generates cross-platform portable scannable data graphics</span>
-                    </div>
-                    <i class="fas fa-qrcode text-slate-400 text-sm"></i>
-                </button>
-            </div>
-
-            <!-- Dynamic QR Code Graphic Image Display Box Container Component Segment -->
-            <div id="invite-qr-display-frame" class="hidden flex flex-col items-center justify-center p-4 bg-white rounded-xl mb-4 animate-fadeIn">
-                <img id="invite-qr-image-node" src="" alt="Workspace QR Access Token Matrix Reference Line">
-                <span class="text-[10px] text-slate-500 mt-2 font-mono uppercase tracking-wider">Scannable Synchronization Vector Token</span>
-            </div>
-
-            <div class="flex justify-end text-xs font-bold">
-                <button onclick="closeInviteOptionsModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-400">Close Window</button>
-            </div>
-        </div>
+    <button class="btn btn-primary" style="margin-bottom:10px;" onclick="copyInviteLink('${ws.name.replace(/'/g,"\\'")}', '${(currentUserProfile.displayName||'').replace(/'/g,"\\'")}', '${ws.code}')"><i class="fas fa-link"></i> Invite by link</button>
+    <div class="card" style="text-align:center;">
+      <div style="font-size:.85rem;color:var(--text-muted);margin-bottom:10px;">Invite by QR</div>
+      <img src="${qrUrl}" style="border-radius:8px;">
     </div>
+  `;
+  document.body.appendChild(drawer);
+  document.getElementById('drawer-overlay').classList.add('active');
+};
 
-    <!-- Modal D: Configure Workspace Settings Control Panel Matrix -->
-    <div id="modal-configure-workspace" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-[5000] hidden flex items-center justify-center p-4">
-        <div class="w-full max-w-md bg-[#1e293b] rounded-xl border border-slate-800 shadow-2xl p-6 text-slate-100 animate-fadeIn">
-            <h3 class="text-lg font-bold mb-4 flex items-center gap-2 text-amber-400"><i class="fas fa-cogs"></i> Re-Configure Workspace Telemetry</h3>
-            <div class="space-y-4 mb-6">
-                <div>
-                    <label class="block text-xs uppercase tracking-wider text-slate-400 font-semibold mb-1">Edit Icon Parameter</label>
-                    <input type="text" id="modal-edit-ws-icon" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white outline-none text-sm">
-                </div>
-                <div>
-                    <label class="block text-xs uppercase tracking-wider text-slate-400 font-semibold mb-1">Workspace Title Name</label>
-                    <input type="text" id="modal-edit-ws-name" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white outline-none text-sm">
-                </div>
-                <div>
-                    <label class="block text-xs uppercase tracking-wider text-slate-400 font-semibold mb-1">Ecosystem Description Metrics Text</label>
-                    <textarea id="modal-edit-ws-desc" rows="3" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white outline-none text-sm"></textarea>
-                </div>
-                
-                <div class="flex items-center justify-between bg-slate-900/60 p-3 rounded-lg border border-slate-800">
-                    <div class="flex flex-col">
-                        <span class="text-xs font-bold text-white">Require Admin Member Verification Approval</span>
-                        <span class="text-[10px] text-slate-500">Routes new applicants into the pending join requests module queue hierarchy</span>
-                    </div>
-                    <label class="relative inline-flex items-center cursor-pointer select-none">
-                        <input type="checkbox" id="modal-edit-ws-approval-toggle" class="sr-only peer">
-                        <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
-                    </label>
-                </div>
-            </div>
+window.copyInviteLink = (wsName, inviterName, code) => {
+  const link = `${window.location.origin}${window.location.pathname}?join=${code}`;
+  const msg = `${inviterName} wants to invite you to ${wsName} on Synchronous!\n${link}`;
+  navigator.clipboard.writeText(msg).then(()=> showToast("Invite message copied to clipboard!"));
+};
 
-            <div class="flex items-center justify-between text-xs font-bold border-t border-slate-800 pt-4">
-                <button onclick="executeWorkspaceDestructionLifecycle()" class="px-3 py-2 bg-red-600/10 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/20 rounded-lg transition flex items-center gap-1.5">
-                    <i class="fas fa-trash-alt text-[11px]"></i> Delete Workspace Cluster
-                </button>
-                <div class="flex gap-2">
-                    <button onclick="closeConfigureWorkspaceModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-400">Cancel</button>
-                    <button onclick="executeWorkspaceConfigurationCommitUpdate()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white">Save Telemetry</button>
-                </div>
-            </div>
-        </div>
+// ---------- CONFIGURE DRAWER ----------
+window.openConfigureDrawer = async (wsId) => {
+  const wsSnap = await get(ref(db, `workspaces/${wsId}`));
+  const ws = wsSnap.val();
+  const drawer = document.createElement('div');
+  drawer.className = 'right-drawer active';
+  drawer.id = 'dynamic-configure-drawer';
+  drawer.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <h2><i class="fas fa-cog"></i> Configure workspace</h2>
+      <button class="btn" style="padding:8px;background:rgba(0,0,0,.05);border-radius:50%;" onclick="this.closest('.right-drawer').remove(); closeAllDrawers();"><i class="fas fa-times"></i></button>
     </div>
-
-    <!-- Modal E: Personal Member Tag Configuration View Panel -->
-    <div id="modal-member-tag-config" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-[5000] hidden flex items-center justify-center p-4">
-        <div class="w-full max-w-sm bg-[#1e293b] rounded-xl border border-slate-800 shadow-2xl p-6 text-slate-100 animate-fadeIn">
-            <h3 class="text-md font-bold mb-2 flex items-center gap-1.5 text-blue-400"><i class="fas fa-tags"></i> Customize Member Tag Badge</h3>
-            <p class="text-xs text-slate-400 mb-4">Define a localized contextual designation string badge parameter visibly tracking role status limits inside this specific group workspace environment exclusively.</p>
-            <div class="mb-5">
-                <input type="text" id="modal-member-tag-input" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white text-sm focus:border-blue-500 outline-none" placeholder="e.g. Faith's parents, Engineering Lead">
-            </div>
-            <div class="flex justify-end gap-2 text-xs font-bold">
-                <button onclick="closeMemberTagConfigModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-400">Cancel</button>
-                <button onclick="executeSaveCustomMemberTagBadge()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white">Save Custom Tag</button>
-            </div>
-        </div>
+    <div class="pfp-container">
+      <img id="cfg-icon-view" class="pfp-preview" style="border-radius:14px;" src="${ws.icon}">
+      <input type="file" id="cfg-icon-input" accept="image/*" style="display:none;">
+      <button class="btn" style="padding:6px 12px;font-size:.8rem;background:#e2e8f0;" onclick="document.getElementById('cfg-icon-input').click()">Change Icon</button>
     </div>
+    <div class="input-group"><label>Workspace Name</label><input type="text" id="cfg-name" value="${ws.name}"></div>
+    <div class="input-group"><label>Description</label><textarea id="cfg-desc" rows="3">${ws.description||''}</textarea></div>
+    <div class="switch-container">
+      <div><strong>Only admins accept new members</strong><div style="font-size:.8rem;color:var(--text-muted);">Requires approval for join requests</div></div>
+      <label class="toggle-switch"><input type="checkbox" id="cfg-approval" ${ws.adminApprovalEnabled?'checked':''}><span class="slider"></span></label>
+    </div>
+    <button class="btn btn-primary" style="margin-bottom:12px;" onclick="saveWsConfig('${wsId}')">Save changes</button>
+    <button class="btn btn-danger" style="width:100%;" onclick="deleteWorkspace('${wsId}')"><i class="fas fa-trash"></i> Delete workspace</button>
+  `;
+  document.body.appendChild(drawer);
+  document.getElementById('drawer-overlay').classList.add('active');
+  let cfgIconUrl = ws.icon;
+  document.getElementById('cfg-icon-input').addEventListener('change', async (e) => {
+    const file = e.target.files[0]; if (!file) return;
+    const url = await uploadToCloudinary(file, 'image');
+    if (url) { cfgIconUrl = url; document.getElementById('cfg-icon-view').src = url; }
+  });
+  window.saveWsConfig = async (wsId) => {
+    await update(ref(db, `workspaces/${wsId}`), {
+      name: document.getElementById('cfg-name').value.trim(),
+      description: document.getElementById('cfg-desc').value.trim(),
+      icon: cfgIconUrl,
+      adminApprovalEnabled: document.getElementById('cfg-approval').checked
+    });
+    showToast("Workspace updated");
+    drawer.remove();
+    closeAllDrawers();
+    openWorkspace(wsId);
+  };
+};
 
-    <!-- MAIN APP CORE CORE SCRIPTS LOOPS INTERFACES SYNC ENGINE -->
-    <script type="module">
-        // Import designated structural v10 implementation script endpoints mapping rules safely
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getDatabase, ref, set, push, onValue, update, remove, runTransaction, onDisconnect } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+window.deleteWorkspace = async (wsId) => {
+  if (!confirm("Delete this workspace permanently? This cannot be undone.")) return;
+  const wsSnap = await get(ref(db, `workspaces/${wsId}`));
+  const ws = wsSnap.val();
+  const membersSnap = await get(ref(db, `workspaces/${wsId}/members`));
+  const members = membersSnap.val() || {};
+  for (const uid of Object.keys(members)) {
+    await remove(ref(db, `users/${uid}/workspaces/${wsId}`));
+  }
+  if (ws && ws.code) await remove(ref(db, `workspaceCodes/${ws.code}`));
+  await remove(ref(db, `workspaces/${wsId}`));
+  showToast("Workspace deleted");
+  document.getElementById('dynamic-configure-drawer')?.remove();
+  closeAllDrawers();
+  activeWorkspaceId = null;
+  document.getElementById('workspace-view').classList.add('hidden');
+  document.getElementById('empty-state').classList.remove('hidden');
+};
 
-        // Structured environment parameter variables assignment configuration mapping
-        const firebaseConfig = {
-            apiKey: "AIzaSyCzV75WoXRkbX9Davc_3Vr853Gvej1WEww",
-            authDomain: "serverfluxionary.firebaseapp.com",
-            databaseURL: "https://serverfluxionary-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "serverfluxionary",
-            storageBucket: "serverfluxionary.firebasestorage.app",
-            messagingSenderId: "693102090542",
-            appId: "1:693102090542:web:59298f926dd0257ce682bf"
-        };
+// ================= MEMBERS TAB =================
+async function renderMembersTab(container) {
+  const wsId = activeWorkspaceId;
+  const wsSnap = await get(ref(db, `workspaces/${wsId}`));
+  const ws = wsSnap.val();
+  const user = auth.currentUser;
+  const isAdmin = ws.ownerUid === user.uid;
 
-        const cloudinaryConfig = {
-            cloudName: "dufbzl68g",
-            uploadPreset: "ml_default"
-        };
+  container.innerHTML = `
+    ${isAdmin && ws.adminApprovalEnabled ? `
+    <div class="card">
+      <div class="section-title"><i class="fas fa-user-clock"></i> Pending join requests</div>
+      <div class="scroll-box" id="pending-list"></div>
+    </div>` : ''}
+    <div class="card">
+      <div class="section-title"><i class="fas fa-address-book"></i> Member Directory</div>
+      <input type="text" id="member-search" placeholder="Search members..." style="margin-bottom:12px;">
+      <div class="scroll-box" id="member-list" style="max-height:400px;"></div>
+      <hr style="opacity:.1;margin:16px 0;">
+      <div class="input-group"><label>Your member tag (visible to this workspace only)</label>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="my-tag-input" placeholder="e.g. Faith's parents">
+          <button class="btn btn-primary" style="width:auto;" onclick="saveMyTag('${wsId}')">Save</button>
+        </div>
+      </div>
+    </div>
+  `;
 
-        // Initialize Native Framework Matrix Components
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getDatabase(app);
-        const googleProvider = new GoogleAuthProvider();
+  if (isAdmin && ws.adminApprovalEnabled) {
+    const pendingUnsub = onValue(ref(db, `workspaces/${wsId}/pendingRequests`), (snap) => {
+      const data = snap.val() || {};
+      const list = document.getElementById('pending-list');
+      if (!list) return;
+      const keys = Object.keys(data);
+      list.innerHTML = keys.length ? '' : `<p style="color:var(--text-muted);font-size:.85rem;">No pending requests</p>`;
+      keys.forEach(uid => {
+        const r = data[uid];
+        const row = document.createElement('div');
+        row.className = 'member-row';
+        row.innerHTML = `<img class="avatar-sm" src="${r.profilePic}"><div style="flex:1;"><div style="font-weight:600;">${r.displayName}</div><div style="font-size:.72rem;color:var(--text-muted);">UID: ${r.uid}</div></div>
+          <button class="btn" style="width:auto;padding:6px 10px;background:#dcfce7;color:#15803d;" onclick="approveRequest('${wsId}','${uid}')"><i class="fas fa-check"></i></button>
+          <button class="btn" style="width:auto;padding:6px 10px;background:#fee2e2;color:#b91c1c;" onclick="rejectRequest('${wsId}','${uid}')"><i class="fas fa-times"></i></button>`;
+        list.appendChild(row);
+      });
+    });
+    activeWorkspaceUnsubs.push(()=>{});
+  }
 
-        // Application State State Registry Context Tracking Layers
-        let isLoginMode = true;
-        let myUserProfile = null;
-        let globalWorkspacesIndexMap = {};
-        let activeWorkspaceId = null;
-        let currentMiddleTabId = 'whiteboard'; // Alternate 'whiteboard' | 'textboxes'
-        
-        // Media Track Records Context Variables
-        let audioMediaRecorderInstance = null;
-        let audioRecordingDataStreamChunks = [];
-        let audioRecordingTimerInterval = null;
-        let audioRecordingSecondsElapsed = 0;
-        let liveCameraStreamRef = null;
+  let allMembers = {};
+  onValue(ref(db, `workspaces/${wsId}/members`), (snap) => {
+    allMembers = snap.val() || {};
+    renderMemberList(allMembers, '');
+  });
 
-        // Whiteboard Synchronous Interface Canvas Telemetry States
-        const canvasElement = document.getElementById('whiteboard-canvas');
-        const canvasContext = canvasElement.getContext('2d');
-        let isDrawingLocally = false;
-        let lastLocalXCoordinates = 0;
-        let lastLocalYCoordinates = 0;
-        let whiteboardStreamListenerRef = null;
+  function renderMemberList(members, filter) {
+    const list = document.getElementById('member-list');
+    if (!list) return;
+    list.innerHTML = '';
+    Object.keys(members).forEach(uid => {
+      const m = members[uid];
+      if (filter && !m.displayName.toLowerCase().includes(filter.toLowerCase())) return;
+      const row = document.createElement('div');
+      row.className = 'member-row';
+      row.innerHTML = `<img class="avatar-sm" src="${m.profilePic}">
+        <div style="flex:1;">
+          <div style="font-weight:600;display:flex;align-items:center;gap:6px;">${m.displayName} ${m.tag ? `<span class="tag-pill">${m.tag}</span>` : ''} ${uid===ws.ownerUid?'<i class="fas fa-crown" style="color:var(--warning);font-size:.75rem;" title="Admin"></i>':''}</div>
+          <div style="font-size:.72rem;color:var(--text-muted);">UID: ${uid}</div>
+        </div>
+        ${isAdmin && uid !== ws.ownerUid ? `<button class="btn" style="width:auto;padding:6px 10px;background:#fee2e2;color:#b91c1c;" onclick="removeMember('${wsId}','${uid}')"><i class="fas fa-user-minus"></i></button>` : ''}`;
+      list.appendChild(row);
+    });
+    if (Object.keys(members).length === 0) list.innerHTML = `<p style="color:var(--text-muted);font-size:.85rem;">No members</p>`;
+  }
 
-        // Toast Operations Engine Core Function Hook
-        window.showToast = (message, type = 'success') => {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = `p-4 rounded-xl shadow-2xl border flex items-center gap-3 min-w-[280px] bg-slate-900 text-slate-100 pointer-events-auto transition duration-300 translate-x-5 opacity-0 border-l-4 animate-slideIn`;
-            
-            if (type === 'success') toast.classList.add('border-l-emerald-500', 'border-slate-800');
-            else if (type === 'error') toast.classList.add('border-l-red-500', 'border-slate-800');
-            else if (type === 'mention') toast.classList.add('border-l-blue-500', 'border-slate-800', 'bg-blue-950/90');
+  document.getElementById('member-search').addEventListener('input', (e) => renderMemberList(allMembers, e.target.value));
+  document.getElementById('my-tag-input').value = (allMembers[user.uid] && allMembers[user.uid].tag) || '';
+  get(ref(db, `workspaces/${wsId}/members/${user.uid}/tag`)).then(s => { document.getElementById('my-tag-input').value = s.val() || ''; });
+}
 
-            const graphicIcon = type === 'success' ? 'fa-check-circle text-emerald-400' : type === 'error' ? 'fa-exclamation-triangle text-red-400' : 'fa-bell text-blue-400';
-            toast.innerHTML = `<i class="fas ${graphicIcon} text-base shrink-0"></i> <div class="text-xs font-medium leading-relaxed">${message}</div>`;
-            
-            container.appendChild(toast);
-            setTimeout(() => {
-                toast.classList.remove('translate-x-5', 'opacity-0');
-            }, 50);
+window.approveRequest = async (wsId, uid) => {
+  const reqSnap = await get(ref(db, `workspaces/${wsId}/pendingRequests/${uid}`));
+  const r = reqSnap.val();
+  await set(ref(db, `workspaces/${wsId}/members/${uid}`), { displayName:r.displayName, profilePic:r.profilePic, tag:'', joinedAt:new Date().toISOString() });
+  await set(ref(db, `users/${uid}/workspaces/${wsId}`), true);
+  await remove(ref(db, `workspaces/${wsId}/pendingRequests/${uid}`));
+  showToast("Member approved");
+};
+window.rejectRequest = async (wsId, uid) => {
+  await remove(ref(db, `workspaces/${wsId}/pendingRequests/${uid}`));
+  showToast("Request rejected");
+};
+window.removeMember = async (wsId, uid) => {
+  if (!confirm("Remove this member from the workspace?")) return;
+  await remove(ref(db, `workspaces/${wsId}/members/${uid}`));
+  await remove(ref(db, `users/${uid}/workspaces/${wsId}`));
+  showToast("Member removed");
+};
+window.saveMyTag = async (wsId) => {
+  const user = auth.currentUser;
+  const tag = document.getElementById('my-tag-input').value.trim();
+  await update(ref(db, `workspaces/${wsId}/members/${user.uid}`), { tag });
+  showToast("Tag saved");
+};
 
-            setTimeout(() => {
-                toast.classList.add('opacity-0', 'translate-y-2');
-                setTimeout(() => toast.remove(), 300);
-            }, 6000);
-        };
+// ================= WHITEBOARD TAB =================
+function renderWhiteboardTab(container) {
+  const wsId = activeWorkspaceId;
+  const user = auth.currentUser;
+  container.innerHTML = `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div class="section-title" style="margin-bottom:0;"><i class="fas fa-chalkboard"></i> Shared Whiteboard</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input type="color" id="wb-color" value="#2563eb" style="width:36px;height:36px;padding:2px;">
+          <button class="btn btn-secondary" style="width:auto;padding:8px 12px;" onclick="clearWhiteboard('${wsId}')"><i class="fas fa-eraser"></i></button>
+        </div>
+      </div>
+      <div class="wb-presence" id="wb-presence-label"></div>
+      <canvas id="whiteboard-canvas"></canvas>
+      <div style="font-size:.75rem;color:var(--text-muted);margin-top:8px;" id="wb-last-edited"></div>
+    </div>
+  `;
+  const canvas = document.getElementById('whiteboard-canvas');
+  const ctx = canvas.getContext('2d');
+  function resizeCanvas(){ const rect = canvas.getBoundingClientRect(); canvas.width = rect.width; canvas.height = 420; redrawAll(); }
+  let strokes = {};
+  function redrawAll(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    Object.values(strokes).forEach(s => drawStroke(s));
+  }
+  function drawStroke(s){
+    if (!s.points || s.points.length < 2) return;
+    ctx.strokeStyle = s.color; ctx.lineWidth = 3; ctx.lineCap='round'; ctx.lineJoin='round';
+    ctx.beginPath();
+    ctx.moveTo(s.points[0].x*canvas.width, s.points[0].y*canvas.height);
+    for (let i=1;i<s.points.length;i++) ctx.lineTo(s.points[i].x*canvas.width, s.points[i].y*canvas.height);
+    ctx.stroke();
+  }
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
 
-        // Network Interface Layer Hook Dispatching Payload Vectors to Cloudinary Storage Hub
-        async function transmitAssetToCloudinaryBlobStore(fileObject) {
-            const dynamicFormData = new FormData();
-            dynamicFormData.append('file', fileObject);
-            dynamicFormData.append('upload_preset', cloudinaryConfig.uploadPreset);
+  const strokesUnsub = onValue(ref(db, `workspaces/${wsId}/whiteboard/strokes`), (snap) => {
+    strokes = snap.val() || {}; redrawAll();
+  });
+  const presenceUnsub = onValue(ref(db, `workspaces/${wsId}/whiteboard/presence`), (snap) => {
+    const data = snap.val() || {};
+    const drawing = Object.values(data).filter(p => p.drawing).map(p => p.displayName);
+    document.getElementById('wb-presence-label').innerText = drawing.length ? `${drawing.join(', ')} ${drawing.length>1?'are':'is'} drawing...` : '';
+  });
+  const lastEditUnsub = onValue(ref(db, `workspaces/${wsId}/whiteboard/lastEdited`), (snap) => {
+    const d = snap.val();
+    document.getElementById('wb-last-edited').innerText = d ? `Last edited by ${d.displayName} at ${d.time}` : '';
+  });
+  activeWorkspaceUnsubs.push(()=>window.removeEventListener('resize', resizeCanvas));
 
-            try {
-                const connectivityResponse = await fetch(`https://api.cloudinary.com/v1_1/${cloudinaryConfig.cloudName}/upload`, {
-                    method: 'POST',
-                    body: dynamicFormData
-                });
-                const payloadResolutionData = await connectivityResponse.json();
-                if (payloadResolutionData.secure_url) {
-                    return payloadResolutionData.secure_url;
-                } else {
-                    window.showToast("Cloudinary Storage upload structural verification rejected: " + payloadResolutionData.error.message, "error");
-                    return null;
-                }
-            } catch (networkFaultException) {
-                window.showToast("Storage gateway connection failed unexpectedly down transmission network loop.", "error");
-                return null;
-            }
-        }
+  let drawing = false, currentStrokeId = null, currentPoints = [];
+  function getPos(e){
+    const rect = canvas.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return { x:(clientX-rect.left)/rect.width, y:(clientY-rect.top)/rect.height };
+  }
+  function startDraw(e){
+    drawing = true; currentPoints = [getPos(e)];
+    currentStrokeId = push(ref(db, `workspaces/${wsId}/whiteboard/strokes`)).key;
+    set(ref(db, `workspaces/${wsId}/whiteboard/presence/${user.uid}`), { drawing:true, displayName: currentUserProfile.displayName });
+  }
+  function moveDraw(e){
+    if (!drawing) return;
+    currentPoints.push(getPos(e));
+    ctx.strokeStyle = document.getElementById('wb-color').value; ctx.lineWidth = 3; ctx.lineCap='round';
+    const p1 = currentPoints[currentPoints.length-2], p2 = currentPoints[currentPoints.length-1];
+    if (p1){ ctx.beginPath(); ctx.moveTo(p1.x*canvas.width,p1.y*canvas.height); ctx.lineTo(p2.x*canvas.width,p2.y*canvas.height); ctx.stroke(); }
+  }
+  function endDraw(){
+    if (!drawing) return;
+    drawing = false;
+    if (currentPoints.length > 1) {
+      set(ref(db, `workspaces/${wsId}/whiteboard/strokes/${currentStrokeId}`), { points: currentPoints, color: document.getElementById('wb-color').value, uid: user.uid });
+      set(ref(db, `workspaces/${wsId}/whiteboard/lastEdited`), { uid:user.uid, displayName: currentUserProfile.displayName, time: new Date().toLocaleString() });
+    }
+    set(ref(db, `workspaces/${wsId}/whiteboard/presence/${user.uid}`), { drawing:false, displayName: currentUserProfile.displayName });
+  }
+  canvas.addEventListener('mousedown', startDraw);
+  canvas.addEventListener('mousemove', moveDraw);
+  canvas.addEventListener('mouseup', endDraw);
+  canvas.addEventListener('mouseleave', endDraw);
+  canvas.addEventListener('touchstart', (e)=>{ e.preventDefault(); startDraw(e); });
+  canvas.addEventListener('touchmove', (e)=>{ e.preventDefault(); moveDraw(e); });
+  canvas.addEventListener('touchend', endDraw);
+}
+window.clearWhiteboard = async (wsId) => {
+  if (!confirm("Clear the whiteboard for everyone?")) return;
+  await remove(ref(db, `workspaces/${wsId}/whiteboard/strokes`));
+  showToast("Whiteboard cleared");
+};
 
-        // CONTROL AUTH SELECTION INTERFACE PRESENTATION LAYERS SWITCHES
-        window.toggleAuthMode = () => {
-            isLoginMode = !isLoginMode;
-            document.getElementById('auth-title').innerText = isLoginMode ? "Welcome Back!" : "Create Account";
-            document.getElementById('auth-subtitle').innerText = isLoginMode ? "Synchronous Enterprise Collaboration Hub Protocol" : "Join the Ultra-Fast Realtime Workspace Environment Core";
-            document.getElementById('auth-submit-btn').innerText = isLoginMode ? "Sign In" : "Sign Up";
-            document.getElementById('auth-toggle-container').innerHTML = isLoginMode ? 
-                `New to the app? What are you even waiting for? <a href="#" id="auth-toggle-link" onclick="toggleAuthMode()" class="text-blue-400 font-bold block mt-1 hover:underline text-sm">Sign up now!</a>` :
-                `Already have an account? <a href="#" id="auth-toggle-link" onclick="toggleAuthMode()" class="text-blue-400 font-bold block mt-1 hover:underline text-sm">Login instead.</a>`;
-        };
-
-        // INITIAL ATTACHED FORM EVENT BINDINGS FOR AUTH DRIVERS
-        document.getElementById('auth-submit-btn').addEventListener('click', async () => {
-            const emailInputString = document.getElementById('auth-email').value.trim();
-            const passwordInputString = document.getElementById('auth-password').value;
-
-            if (!emailInputString || !passwordInputString) {
-                window.showToast("Required baseline authentication parameter values missing.", "error");
-                return;
-            }
-
-            try {
-                if (isLoginMode) {
-                    await signInWithEmailAndPassword(auth, emailInputString, passwordInputString);
-                    window.showToast("Session Access Granted Successfully.");
-                } else {
-                    await createUserWithEmailAndPassword(auth, emailInputString, passwordInputString);
-                    window.showToast("User Provisioning Pipeline Successful.");
-                }
-            } catch (authFaultError) {
-                window.showToast(authFaultError.message, "error");
-            }
+// ================= SHARED NOTES (TEXTBOXES) TAB =================
+function renderNotesTab(container) {
+  const wsId = activeWorkspaceId;
+  const user = auth.currentUser;
+  container.innerHTML = `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div class="section-title" style="margin-bottom:0;"><i class="fas fa-sticky-note"></i> Shared Notes <span id="notes-count" style="color:var(--text-muted);font-weight:400;font-size:.85rem;"></span></div>
+        <button class="btn btn-primary" style="width:auto;" id="add-note-btn" onclick="addTextbox('${wsId}')"><i class="fas fa-plus"></i> New note</button>
+      </div>
+      <div id="notes-list"></div>
+    </div>
+  `;
+  onValue(ref(db, `workspaces/${wsId}/textboxes`), (snap) => {
+    const data = snap.val() || {};
+    const keys = Object.keys(data);
+    document.getElementById('notes-count').innerText = `(${keys.length}/20)`;
+    document.getElementById('add-note-btn').disabled = keys.length >= 20;
+    const list = document.getElementById('notes-list');
+    keys.forEach(id => {
+      const n = data[id];
+      let card = document.getElementById('note-' + id);
+      if (!card) {
+        card = document.createElement('div');
+        card.id = 'note-' + id;
+        card.className = 'textbox-card';
+        list.appendChild(card);
+        let debounceTimer;
+        card.addEventListener('input', (e) => {
+          if (e.target.tagName === 'TEXTAREA') {
+            clearTimeout(debounceTimer);
+            const cursorPos = e.target.selectionStart;
+            debounceTimer = setTimeout(() => {
+              update(ref(db, `workspaces/${wsId}/textboxes/${id}`), { content: e.target.value, lastEditedBy: currentUserProfile.displayName, lastEditedAt: new Date().toLocaleString() });
+            }, 300);
+            set(ref(db, `workspaces/${wsId}/textboxes/${id}/cursors/${user.uid}`), { name: currentUserProfile.displayName, pos: cursorPos });
+          }
         });
-
-        document.getElementById('auth-google-btn').addEventListener('click', async () => {
-            try {
-                await signInWithPopup(auth, googleProvider);
-                window.showToast("Federated identity synchronization completely certified via Google Matrix.");
-            } catch (federatedFaultError) {
-                window.showToast(federatedFaultError.message, "error");
-            }
-        });
-
-        document.getElementById('auth-forgot-link').addEventListener('click', async () => {
-            const emailInputString = document.getElementById('auth-email').value.trim();
-            if (!emailInputString) {
-                window.showToast("Provide your registration email parameter target below inside the field to process reset request instructions.", "error");
-                return;
-            }
-            try {
-                await sendPasswordResetEmail(auth, emailInputString);
-                window.showToast("Cryptographic recovery reset verification vector dispatched into mailbox.");
-            } catch (faultResetException) {
-                window.showToast(faultResetException.message, "error");
-            }
-        });
-
-        document.getElementById('app-logout-btn').addEventListener('click', () => {
-            signOut(auth).then(() => {
-                window.location.reload();
-            });
-        });
-
-        // RECOVERY MONITOR FOR TRACKING SESSION AUTHORIZATION LIFECYCLES
-        onAuthStateChanged(auth, (authenticatedUserNode) => {
-            if (authenticatedUserNode) {
-                document.getElementById('auth-section').classList.add('hidden');
-                document.getElementById('dashboard-section').classList.remove('hidden');
-                
-                // Track user identity properties snapshot live
-                onValue(ref(db, `users/${authenticatedUserNode.uid}`), (profileSnapshot) => {
-                    const profileDataPayload = profileSnapshot.val();
-                    myUserProfile = profileDataPayload;
-
-                    // Update UI segments tracking active identities
-                    document.getElementById('user-footer-uid').innerText = `UID: ${authenticatedUserNode.uid}`;
-                    
-                    if (profileDataPayload && profileDataPayload.profileCompleted) {
-                        document.getElementById('user-footer-name').innerText = profileDataPayload.displayName;
-                        document.getElementById('user-footer-pfp').src = profileDataPayload.profilePic || "https://www.w3schools.com/howto/img_avatar.png";
-                        
-                        // Close drawers safely
-                        document.getElementById('mandatory-profile-drawer').classList.remove('left-0');
-                        document.getElementById('mandatory-profile-drawer').classList.add('left-[-100%]');
-                        document.getElementById('drawer-overlay').classList.add('hidden');
-                        document.getElementById('drawer-overlay').classList.remove('opacity-100');
-
-                        // Run user cross-session @mention notification intercept surveillance monitoring framework loops
-                        initializeRealtimeUserMentionNotificationSurveillance(authenticatedUserNode.uid);
-                    } else {
-                        // Enforce full coverage overlay restriction blocker
-                        document.getElementById('mandatory-profile-drawer').classList.remove('left-[-100%]');
-                        document.getElementById('mandatory-profile-drawer').classList.add('left-0');
-                        document.getElementById('drawer-overlay').classList.remove('hidden');
-                        setTimeout(() => document.getElementById('drawer-overlay').classList.add('opacity-100'), 50);
-                    }
-                });
-
-                // Fetch comprehensive list of workspaces to map globally inside sidebar panels
-                synchronizeApplicationWorkspacesSidebarRepository(authenticatedUserNode.uid);
-
-            } else {
-                document.getElementById('auth-section').classList.remove('hidden');
-                document.getElementById('dashboard-section').classList.add('hidden');
-                document.getElementById('idle-screen').classList.remove('hidden');
-                document.getElementById('active-workspace-layer').classList.add('hidden');
-            }
-        });
-
-        // MANAGE MANDATORY PROFILE DRAWER ASSET UPLOADS AND CHANGES
-        document.getElementById('mandatory-pfp-input').addEventListener('change', async (eventHook) => {
-            const imageFileAsset = eventHook.target.files[0];
-            if (!imageFileAsset) return;
-            const absoluteStorageUrl = await transmitAssetToCloudinaryBlobStore(imageFileAsset);
-            if (absoluteStorageUrl) {
-                document.getElementById('mandatory-pfp-view').src = absoluteStorageUrl;
-            }
-        });
-
-        document.getElementById('mandatory-save-btn').addEventListener('click', async () => {
-            const chosenDisplayName = document.getElementById('mandatory-display-name').value.trim();
-            const chosenDescription = document.getElementById('mandatory-description').value.trim();
-            const currentPfpImageSource = document.getElementById('mandatory-pfp-view').src;
-
-            if (!chosenDisplayName || !chosenDescription) {
-                window.showToast("All data attribute variables are completely mandatory to pass system verification constraints.", "error");
-                return;
-            }
-
-            const executingUserSession = auth.currentUser;
-            if (executingUserSession) {
-                await set(ref(db, `users/${executingUserSession.uid}`), {
-                    uid: executingUserSession.uid,
-                    displayName: chosenDisplayName,
-                    description: chosenDescription,
-                    profilePic: currentPfpImageSource,
-                    profileCompleted: true
-                });
-                window.showToast("User profile parameter records safely committed down database synchronization pipeline channels.");
-            }
-        });
-
-        // SIDEBAR WORKSPACE GENERATION ACTIONS LIFECYCLE CONTROLLERS
-        window.openCreateWorkspaceModal = () => document.getElementById('modal-create-workspace').classList.remove('hidden');
-        window.closeCreateWorkspaceModal = () => document.getElementById('modal-create-workspace').classList.add('hidden');
-        window.openJoinWorkspaceModal = () => document.getElementById('modal-join-workspace').classList.remove('hidden');
-        window.closeJoinWorkspaceModal = () => document.getElementById('modal-join-workspace').classList.add('hidden');
-        window.openInviteOptionsModal = () => document.getElementById('modal-invite-options').classList.remove('hidden');
-        window.closeInviteOptionsModal = () => {
-            document.getElementById('modal-invite-options').classList.add('hidden');
-            document.getElementById('invite-qr-display-frame').classList.add('hidden');
-        };
-        window.openConfigureWorkspaceModal = () => {
-            if (!activeWorkspaceId || !globalWorkspacesIndexMap[activeWorkspaceId]) return;
-            const targetWorkspaceData = globalWorkspacesIndexMap[activeWorkspaceId];
-            document.getElementById('modal-edit-ws-icon').value = targetWorkspaceData.icon || "🚀";
-            document.getElementById('modal-edit-ws-name').value = targetWorkspaceData.name || "";
-            document.getElementById('modal-edit-ws-desc').value = targetWorkspaceData.description || "";
-            document.getElementById('modal-edit-ws-approval-toggle').checked = !!targetWorkspaceData.requireAdminApproval;
-            document.getElementById('modal-configure-workspace').classList.remove('hidden');
-        };
-        window.closeConfigureWorkspaceModal = () => document.getElementById('modal-configure-workspace').classList.add('hidden');
-        window.closeMemberTagConfigModal = () => document.getElementById('modal-member-tag-config').classList.add('hidden');
-
-        // SYSTEM SEQUENCING GENERATING NEW CRYPTOGRAPHIC DIGITAL REALMS
-        window.executeWorkspaceCreationSequence = async () => {
-            const iconParam = document.getElementById('modal-create-workspace').querySelector('#modal-ws-icon').value.trim() || "📁";
-            const nameParam = document.getElementById('modal-create-workspace').querySelector('#modal-ws-name').value.trim();
-            const descParam = document.getElementById('modal-create-workspace').querySelector('#modal-ws-desc').value.trim();
-
-            if (!nameParam || !descParam) {
-                window.showToast("Missing name or description baseline inputs.", "error");
-                return;
-            }
-
-            const secureRandomSixDigitPIN = Math.floor(100000 + Math.random() * 900000).toString();
-            const workspacePushReference = push(ref(db, 'workspaces'));
-            const workspaceGeneratedUniqueKey = workspacePushReference.key;
-            
-            const currentActorUserSession = auth.currentUser;
-
-            const structuredWorkspacePayload = {
-                id: workspaceGeneratedUniqueKey,
-                name: nameParam,
-                description: descParam,
-                icon: iconParam,
-                sixDigitCodePIN: secureRandomSixDigitPIN,
-                creatorUIDId: currentActorUserSession.uid,
-                requireAdminApproval: false,
-                members: {
-                    [currentActorUserSession.uid]: {
-                        uid: currentActorUserSession.uid,
-                        joinedTimestamp: new Date().toISOString(),
-                        customMemberTag: "Workspace Creator Cluster Leader"
-                    }
-                }
-            };
-
-            // Atomically link PIN reference entry mapping indices to simplify validation parameters searches
-            await set(ref(db, `workspaces/${workspaceGeneratedUniqueKey}`), structuredWorkspacePayload);
-            await set(ref(db, `pinsToWorkspaceMappingRegistry/${secureRandomSixDigitPIN}`), workspaceGeneratedUniqueKey);
-            await set(ref(db, `usersPrivateWorkspacesRegistryReferenceIndex/${currentActorUserSession.uid}/${workspaceGeneratedUniqueKey}`), true);
-
-            window.showToast("Workspace configuration engine spawned successfully.");
-            closeCreateWorkspaceModal();
-            window.loadSelectedCollaborationWorkspace(workspaceGeneratedUniqueKey);
-        };
-
-        // ATOMIC LINK JOIN ENGINE PROTOCOLS FOR ENTERING ACTIVE WORKSPACES via SECURE PIN NUMBERS
-        window.executeWorkspaceJoiningSequence = async () => {
-            const targetInputPINString = document.getElementById('modal-join-pin').value.trim();
-            if (targetInputPINString.length !== 6) {
-                window.showToast("Security entry tokens must consistently be composed of exactly 6 numbers.", "error");
-                return;
-            }
-
-            const currentActorUserSession = auth.currentUser;
-
-            // Step 1: Recover exact structural database record address tracking input pin entries
-            onValue(ref(db, `pinsToWorkspaceMappingRegistry/${targetInputPINString}`), async (pinSnapshot) => {
-                const verifiedWorkspaceUIDKey = pinSnapshot.val();
-                if (!verifiedWorkspaceUIDKey) {
-                    window.showToast("It seems to be that this workspace doesnt exist in our database", "error");
-                    return;
-                }
-
-                // Query associated security permissions boundaries setup directly inside recovered workspace address targets
-                onValue(ref(db, `workspaces/${verifiedWorkspaceUIDKey}`), async (workspaceNodeSnapshot) => {
-                    const workspaceActiveTelemetry = workspaceNodeSnapshot.val();
-                    if (!workspaceActiveTelemetry) return;
-
-                    // If member has already verified credentials inside the target structure, instantly re-route pathways safely
-                    if (workspaceActiveTelemetry.members && workspaceActiveTelemetry.members[currentActorUserSession.uid]) {
-                        window.showToast("Authentication registry records confirm existing membership profile.");
-                        closeJoinWorkspaceModal();
-                        window.loadSelectedCollaborationWorkspace(verifiedWorkspaceUIDKey);
-                        return;
-                    }
-
-                    // STEP 2: Evaluate privacy gatekeepers conditional requirements mapping matrices
-                    if (workspaceActiveTelemetry.requireAdminApproval === true) {
-                        // Forward request parameters to the separate scrollable admin pending authorization queue module
-                        await set(ref(db, `workspaces/${verifiedWorkspaceUIDKey}/pendingJoinRequestsQueue/${currentActorUserSession.uid}`), {
-                            uid: currentActorUserSession.uid,
-                            requestedTimestamp: new Date().toISOString(),
-                            displayName: myUserProfile.displayName,
-                            profilePic: myUserProfile.profilePic || "https://www.w3schools.com/howto/img_avatar.png"
-                        });
-                        window.showToast("Request sent successfully");
-                        closeJoinWorkspaceModal();
-                    } else {
-                        // Instant access enrollment routine
-                        await set(ref(db, `workspaces/${verifiedWorkspaceUIDKey}/members/${currentActorUserSession.uid}`), {
-                            uid: currentActorUserSession.uid,
-                            joinedTimestamp: new Date().toISOString(),
-                            customMemberTag: "Standard Participant Node"
-                        });
-                        await set(ref(db, `usersPrivateWorkspacesRegistryReferenceIndex/${currentActorUserSession.uid}/${verifiedWorkspaceUIDKey}`), true);
-                        window.showToast("Successfully joined collaboration space workspace ecosystem.");
-                        closeJoinWorkspaceModal();
-                        window.loadSelectedCollaborationWorkspace(verifiedWorkspaceUIDKey);
-                    }
-                }, { onlyOnce: true });
-            }, { onlyOnce: true });
-        };
-
-        // TRACK REALTIME WORKSPACES SELECTIONS AND UPDATE LEFT SIDEBAR INDEX
-        function synchronizeApplicationWorkspacesSidebarRepository(userUID) {
-            onValue(ref(db, `usersPrivateWorkspacesRegistryReferenceIndex/${userUID}`), (registrySnapshot) => {
-                const targetSidebarGrid = document.getElementById('sidebar-workspaces-list');
-                targetSidebarGrid.innerHTML = "";
-                const registeredWorkspaceKeys = registrySnapshot.val() || {};
-
-                if (Object.keys(registeredWorkspaceKeys).length === 0) {
-                    targetSidebarGrid.innerHTML = `<div class="text-[11px] text-slate-500 italic p-2 text-center bg-slate-900/30 rounded border border-slate-800/40">No workspaces mapped to this account configuration yet.</div>`;
-                    return;
-                }
-
-                Object.keys(registeredWorkspaceKeys).forEach((workspaceIDKey) => {
-                    onValue(ref(db, `workspaces/${workspaceIDKey}`), (wsSnapshot) => {
-                        const wsData = wsSnapshot.val();
-                        if (!wsData) return; // Account for deleted structures
-
-                        globalWorkspacesIndexMap[workspaceIDKey] = wsData;
-                        
-                        // Prevent UI duplication by removing pre-existing list elements if applicable
-                        const preExistingRow = document.getElementById(`side-ws-row-${workspaceIDKey}`);
-                        if (preExistingRow) preExistingRow.remove();
-
-                        const activeRowElement = document.createElement('button');
-                        activeRowElement.id = `side-ws-row-${workspaceIDKey}`;
-                        activeRowElement.className = `w-full text-left p-2.5 rounded-xl flex items-center gap-3 transition text-sm ${activeWorkspaceId === workspaceIDKey ? 'bg-blue-600 text-white font-bold' : 'hover:bg-slate-800 text-slate-300'}`;
-                        activeRowElement.onclick = () => window.loadSelectedCollaborationWorkspace(workspaceIDKey);
-
-                        activeRowElement.innerHTML = `
-                            <span class="text-base shrink-0">${wsData.icon || '📁'}</span>
-                            <div class="flex flex-col min-w-0 flex-1">
-                                <span class="truncate text-xs font-semibold">${wsData.name}</span>
-                                <span class="text-[9px] opacity-70 font-mono tracking-widest truncate">PIN: ${wsData.sixDigitCodePIN}</span>
-                            </div>
-                        `;
-                        targetSidebarGrid.appendChild(activeRowElement);
-                    });
-                });
-            });
-        }
-
-        // LOAD WORKSPACE INTERACTION AREA RUNTIME PIPELINES
-        window.loadSelectedCollaborationWorkspace = (workspaceUID) => {
-            activeWorkspaceId = workspaceUID;
-            document.getElementById('idle-screen').classList.add('hidden');
-            document.getElementById('active-workspace-layer').classList.remove('hidden');
-
-            // Refresh sidebar highlighting parameters states instantly
-            const workingSessionUser = auth.currentUser;
-            if (workingSessionUser) {
-                // Trigger sidebar redrawing configurations safely mapping targets
-                const listItems = document.getElementById('sidebar-workspaces-list').children;
-                for (let buttonNode of listItems) {
-                    if (buttonNode.id === `side-ws-row-${workspaceUID}`) {
-                        buttonNode.className = "w-full text-left p-2.5 rounded-xl flex items-center gap-3 transition text-sm bg-blue-600 text-white font-bold";
-                    } else {
-                        buttonNode.className = "w-full text-left p-2.5 rounded-xl flex items-center gap-3 transition text-sm hover:bg-slate-800 text-slate-300";
-                    }
-                }
-            }
-
-            // Bind Live Structural Synchronizations Tracking Targets
-            onValue(ref(db, `workspaces/${workspaceUID}`), (liveWSSnapshot) => {
-                const currentWSData = liveWSSnapshot.val();
-                if (!currentWSData) {
-                    // Current active space was terminated down database layers by cluster admin
-                    activeWorkspaceId = null;
-                    document.getElementById('idle-screen').classList.remove('hidden');
-                    document.getElementById('active-workspace-layer').classList.add('hidden');
-                    window.showToast("The active workspace workspace ecosystem cluster was permanently destroyed by its administrator.", "error");
-                    return;
-                }
-
-                globalWorkspacesIndexMap[workspaceUID] = currentWSData;
-
-                // Bind Main structural workspace headers details labels
-                document.getElementById('ws-header-icon').innerText = currentWSData.icon || "📁";
-                document.getElementById('ws-header-name').innerText = currentWSData.name;
-                document.getElementById('ws-header-desc').innerText = currentWSData.description;
-                document.getElementById('ws-header-pin').innerText = currentWSData.sixDigitCodePIN;
-
-                // Validate admin status constraints permissions controls interfaces views visibility
-                const currentSessionActor = auth.currentUser;
-                if (currentWSData.creatorUIDId === currentSessionActor.uid) {
-                    document.getElementById('ws-admin-config-btn').classList.remove('hidden');
-                    
-                    // Show pending authorization requests list segments if setting parameters constraints require validation blocks
-                    if (currentWSData.requireAdminApproval === true) {
-                        document.getElementById('ws-pending-approval-module').classList.remove('hidden');
-                        renderWorkspaceAdminPendingApprovalRequests(currentWSData.pendingJoinRequestsQueue);
-                    } else {
-                        document.getElementById('ws-pending-approval-module').classList.add('hidden');
-                    }
-                } else {
-                    document.getElementById('ws-admin-config-btn').classList.add('hidden');
-                    document.getElementById('ws-pending-approval-module').classList.add('hidden');
-                }
-
-                // Render dynamic directory lists and contextual members tags metrics mappings
-                renderWorkspaceMemberDictionaryList();
-            });
-
-            // Re-route operational listening pipes tracking real-time sub-features matrix blocks
-            initializeWorkspaceChatStreamListener(workspaceUID);
-            initializeWorkspaceSharedTextboxesEcosystem(workspaceUID);
-            initializeWorkspaceWhiteboardCanvasSyncPipeline(workspaceUID);
-        };
-
-        // RENDER ADMIN GATEKEEPER APPROVAL MANAGEMENT INTERFACES QUEUE ELEMENTS
-        function renderWorkspaceAdminPendingApprovalRequests(queuePayloadMap) {
-            const injectionScrollTrackContainer = document.getElementById('ws-pending-requests-scroll');
-            injectionScrollTrackContainer.innerHTML = "";
-
-            if (!queuePayloadMap || Object.keys(queuePayloadMap).length === 0) {
-                injectionScrollTrackContainer.innerHTML = `<div class="text-[10px] text-slate-500 italic text-center py-2">No pending admission queue tickets.</div>`;
-                return;
-            }
-
-            Object.values(queuePayloadMap).forEach((requestRowNode) => {
-                const requestRowDOM = document.createElement('div');
-                requestRowDOM.className = "p-2 bg-slate-950 rounded-lg border border-slate-800 flex flex-col gap-1.5 text-xs text-slate-300 animate-fadeIn";
-                requestRowDOM.innerHTML = `
-                    <div class="flex items-center gap-2">
-                        <img class="w-6 h-6 rounded-full object-cover bg-slate-800" src="${requestRowNode.profilePic || 'https://www.w3schools.com/howto/img_avatar.png'}">
-                        <div class="flex flex-col min-w-0">
-                            <span class="font-bold text-white truncate text-[11px]">${requestRowNode.displayName}</span>
-                            <span class="text-[9px] font-mono text-slate-500 truncate">UID: ${requestRowNode.uid}</span>
-                        </div>
-                    </div>
-                    <div class="flex gap-1 justify-end mt-1 text-[10px] font-bold">
-                        <button onclick="executeAdminResolutionOnJoinRequest('${requestRowNode.uid}', false)" class="px-2 py-1 bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white rounded border border-red-500/20 transition">Reject</button>
-                        <button onclick="executeAdminResolutionOnJoinRequest('${requestRowNode.uid}', true)" class="px-2 py-1 bg-emerald-600 text-white rounded shadow transition">Accept Member</button>
-                    </div>
-                `;
-                injectionScrollTrackContainer.appendChild(requestRowDOM);
-            });
-        }
-
-        window.executeAdminResolutionOnJoinRequest = async (applicantUID, isAcceptedStatusTrue) => {
-            if (!activeWorkspaceId) return;
-            
-            if (isAcceptedStatusTrue === true) {
-                // Move applicant data into standard members block
-                await set(ref(db, `workspaces/${activeWorkspaceId}/members/${applicantUID}`), {
-                    uid: applicantUID,
-                    joinedTimestamp: new Date().toISOString(),
-                    customMemberTag: "Standard Participant Node"
-                });
-                await set(ref(db, `usersPrivateWorkspacesRegistryReferenceIndex/${applicantUID}/${activeWorkspaceId}`), true);
-                window.showToast("Applicant entry credential parameters accepted and registered.");
-            } else {
-                window.showToast("Admission request tracking token rejected safely.");
-            }
-
-            // Wipe out pending item from tracking index loops
-            await remove(ref(db, `workspaces/${activeWorkspaceId}/pendingJoinRequestsQueue/${applicantUID}`));
-        };
-
-        // ADMIN CONFIGURATION UPDATES MANAGEMENT RUNTIME SEQUENCES COMMIT
-        window.executeWorkspaceConfigurationCommitUpdate = async () => {
-            if (!activeWorkspaceId) return;
-            const updatedIcon = document.getElementById('modal-edit-ws-icon').value.trim() || "📁";
-            const updatedName = document.getElementById('modal-edit-ws-name').value.trim();
-            const updatedDesc = document.getElementById('modal-edit-ws-desc').value.trim();
-            const updatedApprovalSetting = document.getElementById('modal-edit-ws-approval-toggle').checked;
-
-            if (!updatedName || !updatedDesc) {
-                window.showToast("Required workspace settings data parameters missing.", "error");
-                return;
-            }
-
-            await update(ref(db, `workspaces/${activeWorkspaceId}`), {
-                icon: updatedIcon,
-                name: updatedName,
-                description: updatedDesc,
-                requireAdminApproval: updatedApprovalSetting
-            });
-
-            window.showToast("Ecosystem workspace properties re-configured down database.");
-            closeConfigureWorkspaceModal();
-        };
-
-        window.executeWorkspaceDestructionLifecycle = async () => {
-            if (!activeWorkspaceId) return;
-            if (confirm("CRITICAL COMPONENT ALERT: Are you absolutely sure you want to completely destroy this active workspace ecosystem? All messages, textboxes, and assets will be unrecoverably wiped.")) {
-                const targetWSDataCached = globalWorkspacesIndexMap[activeWorkspaceId];
-                const activePINCode = targetWSDataCached.sixDigitCodePIN;
-
-                // Wipe core mappings records indices pipelines asynchronously
-                await remove(ref(db, `pinsToWorkspaceMappingRegistry/${activePINCode}`));
-                
-                // Clear reference pointers flags for all participants entries logs arrays loops
-                if (targetWSDataCached.members) {
-                    for (let memberUID of Object.keys(targetWSDataCached.members)) {
-                        await remove(ref(db, `usersPrivateWorkspacesRegistryReferenceIndex/${memberUID}/${activeWorkspaceId}`));
-                    }
-                }
-
-                await remove(ref(db, `workspaces/${activeWorkspaceId}`));
-                closeConfigureWorkspaceModal();
-            }
-        };
-
-        // DISPATCH WORKSPACE INVITATION VECTOR COPIES VIA LINK MATRIX FORMATIONS
-        window.triggerWorkspaceLinkCopySequence = () => {
-            if (!activeWorkspaceId || !globalWorkspacesIndexMap[activeWorkspaceId]) return;
-            const contextWorkspace = globalWorkspacesIndexMap[activeWorkspaceId];
-            
-            // Build direct workspace invitation string
-            const proceduralDestinationInviteLink = `${window.location.origin}${window.location.pathname}?joinWorkspacePINToken=${contextWorkspace.sixDigitCodePIN}`;
-            const professionalFormattedMessageBlock = `"${myUserProfile.displayName}" wants to invite you to "${contextWorkspace.name}" on Synchronous!\n\nUse the dynamic cross-platform bridge link below to synchronize updates directly inside our environment:\n${proceduralDestinationInviteLink}`;
-            
-            navigator.clipboard.writeText(professionalFormattedMessageBlock).then(() => {
-                window.showToast("Professional invitation text blueprint payload successfully copied to clipboard.");
-                closeInviteOptionsModal();
-            });
-        };
-
-        window.triggerWorkspaceQRCodeGeneration = () => {
-            if (!activeWorkspaceId || !globalWorkspacesIndexMap[activeWorkspaceId]) return;
-            const contextWorkspace = globalWorkspacesIndexMap[activeWorkspaceId];
-            
-            // Generate QR asset parameters mapping URL query parameters triggers matching target pins
-            const internalReferenceEndpointString = encodeURIComponent(`${window.location.origin}${window.location.pathname}?joinWorkspacePINToken=${contextWorkspace.sixDigitCodePIN}`);
-            const openQRAPIEndpoint = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${internalReferenceEndpointString}`;
-            
-            document.getElementById('invite-qr-image-node').src = openQRAPIEndpoint;
-            document.getElementById('invite-qr-display-frame').classList.remove('hidden');
-        };
-
-        // MEMBER DICTIONARY LOOKUPS FILTER AND LOCAL CUSTOM BADGE DESIGNATIONS CONFIG
-        function renderWorkspaceMemberDictionaryList() {
-            if (!activeWorkspaceId || !globalWorkspacesIndexMap[activeWorkspaceId]) return;
-            const activeWS = globalWorkspacesIndexMap[activeWorkspaceId];
-            const dictionarySearchQueryString = document.getElementById('member-search-input').value.toLowerCase();
-            const targetDOMScrollContainerNode = document.getElementById('ws-members-dictionary-scroll');
-
-            targetDOMScrollContainerNode.innerHTML = "";
-            if (!activeWS.members) return;
-
-            Object.values(activeWS.members).forEach((memberMetaRow) => {
-                // Fetch dynamic core metadata parameters properties mapped inside primary user registration tables indices pipelines
-                onValue(ref(db, `users/${memberMetaRow.uid}`), (userProfileSnap) => {
-                    const baseUserRecord = userProfileSnap.val();
-                    if (!baseUserRecord) return;
-
-                    const matchName = (baseUserRecord.displayName || "").toLowerCase();
-                    const matchUID = (memberMetaRow.uid || "").toLowerCase();
-                    const matchCustomTag = (memberMetaRow.customMemberTag || "").toLowerCase();
-
-                    // Evaluate query match filters configurations
-                    if (dictionarySearchQueryString && 
-                        !matchName.includes(dictionarySearchQueryString) && 
-                        !matchUID.includes(dictionarySearchQueryString) && 
-                        !matchCustomTag.includes(dictionarySearchQueryString)) {
-                        return;
-                    }
-
-                    const dictionaryRowElement = document.createElement('div');
-                    dictionaryRowElement.className = "p-2.5 bg-slate-900/50 rounded-xl border border-slate-800/80 flex items-center justify-between gap-2 text-xs animate-fadeIn";
-                    
-                    const sessionUserActor = auth.currentUser;
-                    const isRowTargetAdmin = activeWS.creatorUIDId === memberMetaRow.uid;
-                    const isCurrentUserTheTargetRow = sessionUserActor.uid === memberMetaRow.uid;
-                    const isCurrentUserTheWorkspaceAdmin = activeWS.creatorUIDId === sessionUserActor.uid;
-
-                    dictionaryRowElement.innerHTML = `
-                        <div class="flex items-center gap-2.5 min-w-0 flex-1">
-                            <img class="w-8 h-8 rounded-full object-cover border border-slate-700 bg-slate-800 shrink-0" src="${baseUserRecord.profilePic || 'https://www.w3schools.com/howto/img_avatar.png'}">
-                            <div class="flex flex-col min-w-0 flex-1">
-                                <div class="flex items-center gap-1">
-                                    <span class="font-bold text-white truncate text-[11px]">${baseUserRecord.displayName}</span>
-                                    ${isRowTargetAdmin ? '<span class="px-1 py-0.2 bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[8px] rounded font-bold uppercase uppercase tracking-wider scale-90">Admin</span>' : ''}
-                                </div>
-                                <span class="text-[9px] text-slate-500 font-mono truncate">UID: ${memberMetaRow.uid}</span>
-                                <span class="text-[10px] text-emerald-400 font-medium truncate mt-0.5 bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-900/50 w-fit"><i class="fas fa-tag text-[8px] mr-1"></i>${memberMetaRow.customMemberTag || 'No Custom Tag Badge Set'}</span>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-1 shrink-0">
-                            ${isCurrentUserTheTargetRow ? `<button onclick="openConfigureMemberTagBadgeModal('${(memberMetaRow.customMemberTag || "").replace(/'/g, "\\'")}')" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded" title="Edit My local Tag"><i class="fas fa-user-tag text-[10px]"></i></button>` : ''}
-                            ${(isCurrentUserTheWorkspaceAdmin && !isRowTargetAdmin) ? `<button onclick="executeAdminExpulsionOnWorkspaceMember('${memberMetaRow.uid}')" class="p-1.5 bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white rounded border border-red-500/20" title="Remove Member"><i class="fas fa-user-minus text-[10px]"></i></button>` : ''}
-                        </div>
-                    `;
-                    targetDOMScrollContainerNode.appendChild(dictionaryRowElement);
-                }, { onlyOnce: true });
-            });
-        }
-
-        window.openConfigureMemberTagBadgeModal = (preExistingTagValue) => {
-            document.getElementById('modal-member-tag-input').value = preExistingTagValue || "";
-            document.getElementById('modal-member-tag-config').classList.remove('hidden');
-        };
-
-        window.executeSaveCustomMemberTagBadge = async () => {
-            if (!activeWorkspaceId) return;
-            const updatedTagBadgeString = document.getElementById('modal-member-tag-input').value.trim();
-            if (!updatedTagBadgeString) return;
-
-            const operationalActorSession = auth.currentUser;
-            await set(ref(db, `workspaces/${activeWorkspaceId}/members/${operationalActorSession.uid}/customMemberTag`), updatedTagBadgeString);
-            window.showToast("Custom member tag badge localized reference committed effectively.");
-            closeMemberTagConfigModal();
-            renderWorkspaceMemberDictionaryList();
-        };
-
-        window.executeAdminExpulsionOnWorkspaceMember = async (targetMemberUID) => {
-            if (!activeWorkspaceId) return;
-            if (confirm("Are you absolutely sure you want to forcibly remove this member node from this workspace cluster structure environment?")) {
-                await remove(ref(db, `workspaces/${activeWorkspaceId}/members/${targetMemberUID}`));
-                await remove(ref(db, `usersPrivateWorkspacesRegistryReferenceIndex/${targetMemberUID}/${activeWorkspaceId}`));
-                window.showToast("Ecosystem workspace membership link detached successfully.");
-                renderWorkspaceMemberDictionaryList();
-            }
-        };
-
-        // REALTIME TELEMETRY CHAT STREAM FUNCTIONS PACKET DELIVERIES
-        let chatStreamRealtimeRefUnsubscribe = null;
-        function initializeWorkspaceChatStreamListener(workspaceUID) {
-            if (chatStreamRealtimeRefUnsubscribe) chatStreamRealtimeRefUnsubscribe();
-            
-            const messagesScrollFeedDOM = document.getElementById('chat-messages-scroll');
-            messagesScrollFeedDOM.innerHTML = "";
-
-            const targetChatDbNodeRef = ref(db, `workspaces/${workspaceUID}/chatGroupBroadcastStream`);
-            
-            // Set up listener attachment block
-            chatStreamRealtimeRefUnsubscribe = onValue(targetChatDbNodeRef, (chatSnapshot) => {
-                messagesScrollFeedDOM.innerHTML = "";
-                const streamDataRecords = chatSnapshot.val();
-
-                if (!streamDataRecords) {
-                    messagesScrollFeedDOM.innerHTML = `<div class="text-[11px] text-slate-500 italic text-center py-8">Broadcast communication channel trace empty. Say hello!</div>`;
-                    return;
-                }
-
-                Object.values(streamDataRecords).forEach((messageDataToken) => {
-                    const messageElementContainerNode = document.createElement('div');
-                    messageElementContainerNode.className = "flex items-start gap-3 text-xs text-slate-200 animate-fadeIn";
-                    
-                    let embeddedAssetDOMElementBlock = "";
-                    if (messageDataToken.mediaStoragePayloadType === 'image') {
-                        embeddedAssetDOMElementBlock = `<img class="w-full max-w-[220px] rounded-xl border border-slate-800 mt-2 object-cover bg-slate-900" src="${messageDataToken.mediaUrlAddressEndpoint}">`;
-                    } else if (messageDataToken.mediaStoragePayloadType === 'video') {
-                        embeddedAssetDOMElementBlock = `<video class="w-full max-w-[240px] rounded-xl border border-slate-800 mt-2 bg-black" controls src="${messageDataToken.mediaUrlAddressEndpoint}"></video>`;
-                    } else if (messageDataToken.mediaStoragePayloadType === 'audio') {
-                        embeddedAssetDOMElementBlock = `<audio class="w-full max-w-[240px] mt-2 brightness-90 accent-blue-500" controls src="${messageDataToken.mediaUrlAddressEndpoint}"></audio>`;
-                    } else if (messageDataToken.mediaStoragePayloadType === 'file') {
-                        embeddedAssetDOMElementBlock = `
-                            <a href="${messageDataToken.mediaUrlAddressEndpoint}" target="_blank" class="mt-2 p-2.5 bg-slate-900 hover:bg-slate-950 rounded-xl border border-slate-800 flex items-center gap-2 text-blue-400 text-[11px] font-semibold w-fit transition">
-                                <i class="fas fa-file-arrow-down text-sm"></i> Download Distributed Document Asset
-                            </a>`;
-                    }
-
-                    // Format explicit mentions indicators styling
-                    let finalBodyTextStringValue = messageDataToken.textStringPayload || "";
-                    if (myUserProfile && finalBodyTextStringValue.includes(`@${myUserProfile.displayName}`)) {
-                        finalBodyTextStringValue = finalBodyTextStringValue.replace(`@${myUserProfile.displayName}`, `<span class="bg-blue-500/20 text-blue-400 font-bold px-1 py-0.5 rounded border border-blue-500/30">@${myUserProfile.displayName}</span>`);
-                    }
-
-                    messageElementContainerNode.innerHTML = `
-                        <img class="w-8 h-8 rounded-full object-cover bg-slate-800 shrink-0 border border-slate-800" src="${messageDataToken.senderPfpPicSourceUrl || 'https://www.w3schools.com/howto/img_avatar.png'}">
-                        <div class="flex flex-col min-w-0 flex-1">
-                            <div class="flex items-baseline gap-2">
-                                <span class="font-bold text-white text-[11px]">${messageDataToken.senderNameStringValue}</span>
-                                <span class="text-[8px] text-slate-500 font-mono">${messageDataToken.timestampStringLabel || ''}</span>
-                            </div>
-                            <p class="text-slate-300 leading-relaxed break-words mt-0.5 text-xs">${finalBodyTextStringValue}</p>
-                            ${embeddedAssetDOMElementBlock}
-                        </div>
-                    `;
-                    messagesScrollFeedDOM.appendChild(messageElementContainerNode);
-                });
-
-                // Auto Scroll to absolute floor target metrics boundary
-                messagesScrollFeedDOM.scrollTop = messagesScrollFeedDOM.scrollHeight;
-            });
-        }
-
-        // AUTOCOMPLETE INTERFACES LIST CONTROLLER FOR AT-MENTIONS
-        const chatInputFieldNode = document.getElementById('chat-message-input');
-        chatInputFieldNode.addEventListener('input', (eventObj) => {
-            const currentStringVal = eventObj.target.value;
-            const popoverBox = document.getElementById('mention-autocomplete-box');
-            popoverBox.innerHTML = "";
-
-            if (!activeWorkspaceId || !currentStringVal.includes('@')) {
-                popoverBox.classList.add('hidden');
-                return;
-            }
-
-            const activeWS = globalWorkspacesIndexMap[activeWorkspaceId];
-            if (!activeWS || !activeWS.members) return;
-
-            const partsIndexToken = currentStringVal.split('@');
-            const criteriaQueryMatch = partsIndexToken[partsIndexToken.length - 1].toLowerCase();
-
-            let matchedMembersCount = 0;
-            Object.values(activeWS.members).forEach((memberRow) => {
-                onValue(ref(db, `users/${memberRow.uid}`), (userProfileSnap) => {
-                    const uProfile = userProfileSnap.val();
-                    if (!uProfile) return;
-
-                    if (uProfile.displayName.toLowerCase().includes(criteriaQueryMatch)) {
-                        matchedMembersCount++;
-                        const lookupSelectionButton = document.createElement('button');
-                        lookupSelectionButton.className = "w-full text-left p-2 hover:bg-slate-800 text-xs flex items-center gap-2 text-slate-200 border-b border-slate-800/40 font-medium";
-                        lookupSelectionButton.onclick = () => {
-                            // Inject string matching tokens back inside input field buffer
-                            const stringReconstructionParts = currentStringVal.split('@');
-                            stringReconstructionParts.pop();
-                            chatInputFieldNode.value = stringReconstructionParts.join('@') + `@${uProfile.displayName} `;
-                            popoverBox.classList.add('hidden');
-                            chatInputFieldNode.focus();
-                        };
-                        lookupSelectionButton.innerHTML = `
-                            <img class="w-5 h-5 rounded-full object-cover bg-slate-700" src="${uProfile.profilePic || 'https://www.w3schools.com/howto/img_avatar.png'}">
-                            <span>${uProfile.displayName}</span>
-                        `;
-                        popoverBox.appendChild(lookupSelectionButton);
-                    }
-                }, { onlyOnce: true });
-            });
-
-            if (matchedMembersCount > 0) popoverBox.classList.remove('hidden');
-            else popoverBox.classList.add('hidden');
-        });
-
-        window.transmitWorkspaceChatMessage = async () => {
-            if (!activeWorkspaceId) return;
-            const textRawInput = chatInputFieldNode.value.trim();
-            if (!textRawInput) return;
-
-            const userActor = auth.currentUser;
-            const uniqueMessageNodePushKey = push(ref(db, `workspaces/${activeWorkspaceId}/chatGroupBroadcastStream`)).key;
-            const absoluteCurrentTimestampLabel = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-            const structuredMessagePayload = {
-                id: uniqueMessageNodePushKey,
-                senderUIDId: userActor.uid,
-                senderNameStringValue: myUserProfile.displayName,
-                senderPfpPicSourceUrl: myUserProfile.profilePic || "https://www.w3schools.com/howto/img_avatar.png",
-                textStringPayload: textRawInput,
-                timestampStringLabel: absoluteCurrentTimestampLabel,
-                epochTimestampValue: Date.now(),
-                mediaStoragePayloadType: 'none',
-                mediaUrlAddressEndpoint: ''
-            };
-
-            chatInputFieldNode.value = "";
-            document.getElementById('mention-autocomplete-box').classList.add('hidden');
-
-            // Dispatch message transaction down tracking node
-            await set(ref(db, `workspaces/${activeWorkspaceId}/chatGroupBroadcastStream/${uniqueMessageNodePushKey}`), structuredMessagePayload);
-
-            // PARSE MENTIONS TO DISTRIBUTE TOAST ALERTS INTERCEPT TRACKS ACROSS SESSIONS CONTEXTS
-            if (textRawInput.includes('@')) {
-                const activeWSContext = globalWorkspacesIndexMap[activeWorkspaceId];
-                Object.values(activeWSContext.members).forEach((memberRow) => {
-                    onValue(ref(db, `users/${memberRow.uid}`), (profileSnap) => {
-                        const targetProfileObj = profileSnap.val();
-                        if (targetProfileObj && textRawInput.includes(`@${targetProfileObj.displayName}`)) {
-                            // Target mention detected, append trace token inside user's private notification alerts dashboard registry index
-                            const alertPushUIDKey = push(ref(db, `usersPrivateNotificationChannelsAlertRegistry/${memberRow.uid}`)).key;
-                            set(ref(db, `usersPrivateNotificationChannelsAlertRegistry/${memberRow.uid}/${alertPushUIDKey}`), {
-                                id: alertPushUIDKey,
-                                dispatcherName: myUserProfile.displayName,
-                                targetWorkspaceName: activeWSContext.name,
-                                exactTimestampString: new Date().toLocaleString(),
-                                readReceiptAcknowledged: false
-                            });
-                        }
-                    }, { onlyOnce: true });
-                });
-            }
-        };
-
-        // TRACK HISTORICAL AND REALTIME MENTIONS TO POP TOAST MESSAGES DYNAMICALLY
-        function initializeRealtimeUserMentionNotificationSurveillance(userUIDIdKey) {
-            const mentionRegistryDatabaseRef = ref(db, `usersPrivateNotificationChannelsAlertRegistry/${userUIDIdKey}`);
-            onValue(mentionRegistryDatabaseRef, (mentionsSnapshot) => {
-                const globalAlertMap = mentionsSnapshot.val();
-                if (!globalAlertMap) return;
-
-                Object.values(globalAlertMap).forEach((alertTokenNode) => {
-                    if (alertTokenNode.readReceiptAcknowledged === false) {
-                        // Pop dynamic standalone structural custom toast notification alert tracking context down screen framework interface
-                        window.showToast(`You got mentioned by [${alertTokenNode.dispatcherName}] in the workspace [${alertTokenNode.targetWorkspaceName}] at exactly [${alertTokenNode.exactTimestampString}]`, 'mention');
-                        
-                        // Flag alert token entry immediately inside cloud ledger indexes to inhibit duplicated popup actions down the runtime thread loop
-                        update(ref(db, `usersPrivateNotificationChannelsAlertRegistry/${userUIDIdKey}/${alertTokenNode.id}`), { readReceiptAcknowledged: true });
-                    }
-                });
-            });
-        }
-
-        // FILE SELECTION CHANGES LISTENER TO TRIGGER INSTANT LARGE CHUNK MEDIA STORAGE MOUNT RUNS
-        document.getElementById('chat-file-input').addEventListener('change', async (eventObjectHook) => {
-            const targetedFileBlob = eventObjectHook.target.files[0];
-            if (!targetedFileBlob) return;
-
-            // Enforce explicit structural framework file safety size threshold boundary parameters limits rules caps
-            if (targetedFileBlob.size > 70 * 1024 * 1024) {
-                window.showToast("Evidence multimedia file transmission blocks restricted. Artifact exceeds 70MB validation target cutoff threshold.", "error");
-                return;
-            }
-
-            window.showToast("Uploading media asset pipeline directly to storage cluster cells matrices... Please wait.");
-            const resolvedCloudStorageEndpointAddress = await transmitAssetToCloudinaryBlobStore(targetedFileBlob);
-            
-            if (!resolvedCloudStorageEndpointAddress) return;
-
-            // Detect matching data stream layout parameter scopes properties format type metrics
-            let deducedPayloadCategoryFormatString = "file";
-            if (targetedFileBlob.type.startsWith('image/')) deducedPayloadCategoryFormatString = "image";
-            else if (targetedFileBlob.type.startsWith('video/')) deducedPayloadCategoryFormatString = "video";
-            else if (targetedFileBlob.type.startsWith('audio/')) deducedPayloadCategoryFormatString = "audio";
-
-            const userActor = auth.currentUser;
-            const uniqueMsgPushKey = push(ref(db, `workspaces/${activeWorkspaceId}/chatGroupBroadcastStream`)).key;
-            
-            await set(ref(db, `workspaces/${activeWorkspaceId}/chatGroupBroadcastStream/${uniqueMsgPushKey}`), {
-                id: uniqueMsgPushKey,
-                senderUIDId: userActor.uid,
-                senderNameStringValue: myUserProfile.displayName,
-                senderPfpPicSourceUrl: myUserProfile.profilePic || "https://www.w3schools.com/howto/img_avatar.png",
-                textStringPayload: `Shared an attached telemetry data file element asset: ${targetedFileBlob.name}`,
-                timestampStringLabel: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                epochTimestampValue: Date.now(),
-                mediaStoragePayloadType: deducedPayloadCategoryFormatString,
-                mediaUrlAddressEndpoint: resolvedCloudStorageEndpointAddress
-            });
-        });
-
-        // LIVE CAMERA SNAPS CAPTURE MATRIX HUB LAYOUT OPERATIONAL PIPELINES
-        window.toggleCameraCapturePanel = async () => {
-            const panelDOM = document.getElementById('camera-capture-panel');
-            const videoDOM = document.getElementById('camera-video-stream');
-
-            if (panelDOM.classList.contains('hidden')) {
-                try {
-                    liveCameraStreamRef = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-                    videoDOM.srcObject = liveCameraStreamRef;
-                    panelDOM.classList.remove('hidden');
-                } catch (mediaHardwareException) {
-                    window.showToast("Failed to initialize system interface camera hardware matrix access blocks.", "error");
-                }
-            } else {
-                if (liveCameraStreamRef) {
-                    liveCameraStreamRef.getTracks().forEach(trackItem => trackItem.stop());
-                }
-                panelDOM.classList.add('hidden');
-            }
-        };
-
-        window.executeCameraCaptureSnapshot = async () => {
-            const videoDOM = document.getElementById('camera-video-stream');
-            const invisibleCanvasElement = document.createElement('canvas');
-            invisibleCanvasElement.width = videoDOM.videoWidth || 640;
-            invisibleCanvasElement.height = videoDOM.videoHeight || 480;
-            
-            const contextRenderingMatrix = invisibleCanvasElement.getContext('2d');
-            contextRenderingMatrix.drawImage(videoDOM, 0, 0, invisibleCanvasElement.width, invisibleCanvasElement.height);
-            
-            invisibleCanvasElement.toBlob(async (imageBlobObject) => {
-                window.toggleCameraCapturePanel(); // Terminate webcam feeds streams tracks capture properties safely
-                window.showToast("Uploading captured camera photo snap token stream...");
-                
-                const cloudAssetDestinationAddressUrl = await transmitAssetToCloudinaryBlobStore(imageBlobObject);
-                if (!cloudAssetDestinationAddressUrl) return;
-
-                const userActor = auth.currentUser;
-                const uniqueMsgPushKey = push(ref(db, `workspaces/${activeWorkspaceId}/chatGroupBroadcastStream`)).key;
-                
-                await set(ref(db, `workspaces/${activeWorkspaceId}/chatGroupBroadcastStream/${uniqueMsgPushKey}`), {
-                    id: uniqueMsgPushKey,
-                    senderUIDId: userActor.uid,
-                    senderNameStringValue: myUserProfile.displayName,
-                    senderPfpPicSourceUrl: myUserProfile.profilePic || "https://www.w3schools.com/howto/img_avatar.png",
-                    textStringPayload: "Dispatched direct camera photographic snapshot image asset captures.",
-                    timestampStringLabel: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                    epochTimestampValue: Date.now(),
-                    mediaStoragePayloadType: 'image',
-                    mediaUrlAddressEndpoint: cloudAssetDestinationAddressUrl
-                });
-            }, 'image/jpeg', 0.9);
-        };
-
-        // AUDIO RECORDING METRICS (MAX 8 MINUTES LIFECYCLE)
-        window.toggleVoiceRecordingLifecycle = async () => {
-            const microIconNodeElement = document.getElementById('voice-record-btn');
-            const timerLabelHUDNode = document.getElementById('voice-timer-label');
-
-            if (!audioMediaRecorderInstance) {
-                // Initialize audio hardware capture channels lines strings mapping parameters
-                try {
-                    const audioStreamSourceLine = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    audioMediaRecorderInstance = new MediaRecorder(audioStreamSourceLine);
-                    audioRecordingDataStreamChunks = [];
-
-                    audioMediaRecorderInstance.ondataavailable = (dataStreamEvent) => {
-                        if (dataStreamEvent.data.size > 0) audioRecordingDataStreamChunks.push(dataStreamEvent.data);
-                    };
-
-                    audioMediaRecorderInstance.onstop = async () => {
-                        const voiceCompleteBlobObject = new Blob(audioRecordingDataStreamChunks, { type: 'audio/webm' });
-                        window.showToast("Uploading compressed voice note audio transmission sequence...");
-                        
-                        const absoluteVoiceCloudUrlAddress = await transmitAssetToCloudinaryBlobStore(voiceCompleteBlobObject);
-                        if (absoluteVoiceCloudUrlAddress) {
-                            const userActor = auth.currentUser;
-                            const uniqueMsgPushKey = push(ref(db, `workspaces/${activeWorkspaceId}/chatGroupBroadcastStream`)).key;
-                            
-                            await set(ref(db, `workspaces/${activeWorkspaceId}/chatGroupBroadcastStream/${uniqueMsgPushKey}`), {
-                                id: uniqueMsgPushKey,
-                                senderUIDId: userActor.uid,
-                                senderNameStringValue: myUserProfile.displayName,
-                                senderPfpPicSourceUrl: myUserProfile.profilePic || "https://www.w3schools.com/howto/img_avatar.png",
-                                textStringPayload: "Dispatched direct voice record communication clip message.",
-                                timestampStringLabel: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                                epochTimestampValue: Date.now(),
-                                mediaStoragePayloadType: 'audio',
-                                mediaUrlAddressEndpoint: absoluteVoiceCloudUrlAddress
-                            });
-                        }
-
-                        // Flush streams tracks references out safely
-                        audioStreamSourceLine.getTracks().forEach(track => track.stop());
-                    };
-
-                    audioMediaRecorderInstance.start();
-                    
-                    // Activate structural timer counters loop constraints limits validation hooks
-                    audioRecordingSecondsElapsed = 0;
-                    timerLabelHUDNode.classList.remove('hidden');
-                    timerLabelHUDNode.innerText = "0:00";
-                    microIconNodeElement.classList.add('bg-red-600', 'text-white', 'animate-pulse');
-
-                    audioRecordingTimerInterval = setInterval(() => {
-                        audioRecordingSecondsElapsed++;
-                        const renderingMinutes = Math.floor(audioRecordingSecondsElapsed / 60);
-                        const renderingSeconds = audioRecordingSecondsElapsed % 60;
-                        timerLabelHUDNode.innerText = `${renderingMinutes}:${renderingSeconds < 10 ? '0' : ''}${renderingSeconds}`;
-
-                        // Enforce maximum structural recording constraint limits ceiling parameters cutoff at exactly 8 minutes
-                        if (audioRecordingSecondsElapsed >= 8 * 60) {
-                            window.showToast("Voice transmission boundaries threshold max limit reached. Cutting recording stream off to protect throughput performance indexes.");
-                            window.toggleVoiceRecordingLifecycle();
-                        }
-                    }, 1000);
-
-                } catch (audioHardwareAccessFaultException) {
-                    window.showToast("Audio hardware capture recording systems rejected initialization parameters operations requests triggers.", "error");
-                }
-            } else {
-                // Terminate active voice notes loops allocations tracking instances variables
-                clearInterval(audioRecordingTimerInterval);
-                audioMediaRecorderInstance.stop();
-                
-                audioMediaRecorderInstance = null;
-                timerLabelHUDNode.classList.add('hidden');
-                microIconNodeElement.classList.remove('bg-red-600', 'text-white', 'animate-pulse');
-            }
-        };
-
-        // SUB-VIEW DELEGATION SWITCHBOARD TABS (WHITEBOARD CANVASES VS SHARED TEXTBOXES)
-        window.switchMiddleWorkspaceTab = (targetTabElementIdKey) => {
-            currentMiddleTabId = targetTabElementIdKey;
-            
-            const whiteboardTabBtn = document.getElementById('tab-btn-whiteboard');
-            const textboxesTabBtn = document.getElementById('tab-btn-textboxes');
-            const whiteboardPaneView = document.getElementById('pane-view-whiteboard');
-            const textboxesPaneView = document.getElementById('pane-view-textboxes');
-
-            if (targetTabElementIdKey === 'whiteboard') {
-                whiteboardTabBtn.className = "px-3 py-1 text-xs font-bold rounded-md bg-slate-800 text-blue-400 border border-slate-700";
-                textboxesTabBtn.className = "px-3 py-1 text-xs font-bold rounded-md text-slate-400 hover:bg-slate-800 hover:text-white";
-                whiteboardPaneView.classList.remove('hidden');
-                textboxesPaneView.classList.add('hidden');
-                
-                // Recalibrate rendering canvas aspect bounds mapping values layouts instantly upon presentation updates modifications triggers
-                recalculateWhiteboardCanvasDimensionsScaleMatrix();
-            } else {
-                textboxesTabBtn.className = "px-3 py-1 text-xs font-bold rounded-md bg-slate-800 text-emerald-400 border border-slate-700";
-                whiteboardTabBtn.className = "px-3 py-1 text-xs font-bold rounded-md text-slate-400 hover:bg-slate-800 hover:text-white";
-                textboxesPaneView.classList.remove('hidden');
-                whiteboardPaneView.classList.add('hidden');
-            }
-        };
-
-        // INTERACTIVE REALTIME GRAPHICS WHITEBOARD ENGINE SYNCHRONIZATION CHANNELS
-        function recalculateWhiteboardCanvasDimensionsScaleMatrix() {
-            const boundingBoxFrameContainer = document.getElementById('whiteboard-canvas-bounding-container');
-            if (!boundingBoxFrameContainer) return;
-            
-            // Backup active context vector tracing properties states fields
-            const tempCachedCanvasDataSnapshotUrl = canvasElement.toDataURL();
-            
-            canvasElement.width = boundingBoxFrameContainer.clientWidth;
-            canvasElement.height = boundingBoxFrameContainer.clientHeight;
-
-            // Restore elements tracking pixels data layers
-            const temporaryImageRestoreMatrixNode = new Image();
-            temporaryImageRestoreMatrixNode.src = tempCachedCanvasDataSnapshotUrl;
-            temporaryImageRestoreMatrixNode.onload = () => {
-                canvasContext.drawImage(temporaryImageRestoreMatrixNode, 0, 0);
-            };
-        }
-
-        window.addEventListener('resize', recalculateWhiteboardCanvasDimensionsScaleMatrix);
-
-        function initializeWorkspaceWhiteboardCanvasSyncPipeline(workspaceUID) {
-            if (whiteboardStreamListenerRef) whiteboardStreamListenerRef();
-            
-            recalculateWhiteboardCanvasDimensionsScaleMatrix();
-            canvasContext.clearRect(0, 0, canvasElement.width, canvasElement.height);
-
-            const activeWSWhiteboardPathRef = ref(db, `workspaces/${workspaceUID}/interactiveWhiteboardCanvasStorageVector`);
-            
-            // Attach stream reader loop trace mappings parameters properties
-            whiteboardStreamListenerRef = onValue(activeWSWhiteboardPathRef, (whiteboardSnapshotData) => {
-                const globalLinesVectorBlock = whiteboardSnapshotData.val();
-                
-                // Clear and perform incremental redraw updates configurations
-                canvasContext.clearRect(0, 0, canvasElement.width, canvasElement.height);
-                
-                if (!globalLinesVectorBlock) {
-                    document.getElementById('wb-status-text').innerText = "Canvas Empty";
-                    return;
-                }
-
-                let lastActionAuthorName = "System Node";
-                Object.values(globalLinesVectorBlock).forEach((vectorLineSegmentToken) => {
-                    lastActionAuthorName = vectorLineSegmentToken.authorNameStringValue;
-                    
-                    canvasContext.beginPath();
-                    canvasContext.lineWidth = vectorLineSegmentToken.brushThicknessSizeValue;
-                    canvasContext.strokeStyle = vectorLineSegmentToken.brushHexColorCode;
-                    canvasContext.lineCap = "round";
-                    canvasContext.lineJoin = "round";
-                    
-                    // Transform relational rendering percentage coordinate tracking metrics back into localized pixel definitions maps
-                    const calculatedInitialX = vectorLineSegmentToken.startPointPercentX * canvasElement.width;
-                    const calculatedInitialY = vectorLineSegmentToken.startPointPercentY * canvasElement.height;
-                    const calculatedTerminalX = vectorLineSegmentToken.endPointPercentX * canvasElement.width;
-                    const calculatedTerminalY = vectorLineSegmentToken.endPointPercentY * canvasElement.height;
-
-                    canvasContext.moveTo(calculatedInitialX, calculatedInitialY);
-                    canvasContext.lineTo(calculatedTerminalX, calculatedTerminalY);
-                    canvasContext.stroke();
-                });
-
-                document.getElementById('wb-status-text').innerText = `Last edited by: ${lastActionAuthorName}`;
-            });
-        }
-
-        // WHITEBOARD ACTION INPUT POINTER INTERCEPT DETECTORS LIFECYCLES RUNTIMES
-        canvasElement.addEventListener('mousedown', initiateDrawingPointerInteractionTrackLoop);
-        canvasElement.addEventListener('mousemove', executeDrawingPointerMoveVectorSync);
-        canvasElement.addEventListener('mouseup', terminateDrawingPointerActivityLifecycle);
-        canvasElement.addEventListener('mouseleave', terminateDrawingPointerActivityLifecycle);
-
-        function initiateDrawingPointerInteractionTrackLoop(clickEvent) {
-            isDrawingLocally = true;
-            lastLocalXCoordinates = clickEvent.offsetX;
-            lastLocalYCoordinates = clickEvent.offsetY;
-        }
-
-        async function executeDrawingPointerMoveVectorSync(moveEvent) {
-            if (!isDrawingLocally || !activeWorkspaceId) return;
-
-            const currentX = moveEvent.offsetX;
-            const currentY = moveEvent.offsetY;
-
-            // Convert raw tracking coordinate metrics into normalized standard decimals factors elements
-            const ratioStartX = lastLocalXCoordinates / canvasElement.width;
-            const ratioStartY = lastLocalYCoordinates / canvasElement.height;
-            const ratioEndX = currentX / canvasElement.width;
-            const ratioEndY = currentY / canvasElement.height;
-
-            const brushThickness = parseInt(document.getElementById('wb-brush-size').value, 10);
-            const brushHexColor = document.getElementById('wb-brush-color').value;
-
-            const linePushReferenceKey = push(ref(db, `workspaces/${activeWorkspaceId}/interactiveWhiteboardCanvasStorageVector`)).key;
-            
-            // Instantly append trace coordinates into realtime array layers streams
-            await set(ref(db, `workspaces/${activeWorkspaceId}/interactiveWhiteboardCanvasStorageVector/${linePushReferenceKey}`), {
-                id: linePushReferenceKey,
-                authorUIDId: auth.currentUser.uid,
-                authorNameStringValue: myUserProfile.displayName,
-                startPointPercentX: ratioStartX,
-                startPointPercentY: ratioStartY,
-                endPointPercentX: ratioEndX,
-                endPointPercentY: ratioEndY,
-                brushThicknessSizeValue: brushThickness,
-                brushHexColorCode: brushHexColor
-            });
-
-            lastLocalXCoordinates = currentX;
-            lastLocalYCoordinates = currentY;
-            document.getElementById('wb-status-text').innerText = "Drawing Actively...";
-        }
-
-        function terminateDrawingPointerActivityLifecycle() {
-            isDrawingLocally = false;
-        }
-
-        window.clearWhiteboardCanvasWorkspaceTrack = async () => {
-            if (!activeWorkspaceId) return;
-            if (confirm("Clear the entire shared graphical slate canvas matrix?")) {
-                await remove(ref(db, `workspaces/${activeWorkspaceId}/interactiveWhiteboardCanvasStorageVector`));
-                window.showToast("Shared whiteboard data slate wiped cleanly.");
-            }
-        };
-
-        // REALTIME SHARED DOCUMENT TEXTBOXES ECOSYSTEM CONFIGS (MAX 20 TEXTBOXES POOL)
-        let textboxesStreamListenerRefUnsubscribe = null;
-        function initializeWorkspaceSharedTextboxesEcosystem(workspaceUID) {
-            if (textboxesStreamListenerRefUnsubscribe) textboxesStreamListenerRefUnsubscribe();
-            
-            const injectionGridDOMNode = document.getElementById('shared-textboxes-injection-grid');
-            injectionGridDOMNode.innerHTML = "";
-
-            const targetedTextboxesDbPathRef = ref(db, `workspaces/${workspaceUID}/sharedDocumentTextboxesCollectionArrays`);
-            
-            textboxesStreamListenerRefUnsubscribe = onValue(targetedTextboxesDbPathRef, (textboxesSnapshot) => {
-                // Clear grid canvas frame layout components map fields safely before injection renders cycles execute
-                injectionGridDOMNode.innerHTML = "";
-                const absoluteTextboxMapCollection = textboxesSnapshot.val() || {};
-
-                const totalActiveCount = Object.keys(absoluteTextboxMapCollection).length;
-                document.getElementById('textbox-counter-label').innerText = `${totalActiveCount} / 20 textboxes initialized`;
-
-                if (totalActiveCount === 0) {
-                    injectionGridDOMNode.innerHTML = `<div class="col-span-full text-xs text-slate-500 text-center py-12 italic bg-slate-900/20 rounded-xl border border-dashed border-slate-800">Ecosystem document sandbox environment empty. Click 'Create Textbox' above to initialize standard field maps arrays.</div>`;
-                    return;
-                }
-
-                // Render dynamic text inputs modules ordered logically mapping high priority states elements
-                const sortedTextboxInstancesArray = Object.values(absoluteTextboxMapCollection).sort((itemA, itemB) => {
-                    const priorityValueA = itemA.isMarkedImportantFlagStatusTrue === true ? 1 : 0;
-                    const priorityValueB = itemB.isMarkedImportantFlagStatusTrue === true ? 1 : 0;
-                    return priorityValueB - priorityValueA; // Sort high priority elements to absolute top positions
-                });
-
-                sortedTextboxInstancesArray.forEach((textboxInstanceNodeItem) => {
-                    const textboxCardDOMWrapNode = document.createElement('div');
-                    textboxCardDOMWrapNode.className = `p-4 rounded-xl border flex flex-col gap-3 relative transition duration-300 bg-slate-900/60 animate-fadeIn ${textboxInstanceNodeItem.isMarkedImportantFlagStatusTrue ? 'border-amber-500/40 shadow-lg shadow-amber-500/5' : 'border-slate-800'}`;
-                    
-                    // Render cursor telemetry badges
-                    let activityCursorHUDDOMString = "";
-                    if (textboxInstanceNodeItem.activeEditorUserIdentityLabel && textboxInstanceNodeItem.activeEditorUserUIDId !== auth.currentUser.uid) {
-                        activityCursorHUDDOMString = `
-                            <div class="absolute top-2 right-2 flex items-center gap-1.5 px-2 py-0.5 rounded bg-blue-600 text-[9px] font-bold text-white tracking-wide animate-pulse shadow-md z-10">
-                                <i class="fas fa-edit text-[8px]"></i> <span>${textboxInstanceNodeItem.activeEditorUserIdentityLabel} is typing...</span>
-                            </div>`;
-                    }
-
-                    textboxCardDOMWrapNode.innerHTML = `
-                        <div class="flex items-center justify-between gap-2 relative">
-                            <input type="text" id="ws-box-title-${textboxInstanceNodeItem.id}" onchange="executeSharedTextboxMetadataUpdate('${textboxInstanceNodeItem.id}')" class="bg-transparent text-sm font-bold text-white border-b border-transparent hover:border-slate-700 focus:border-blue-500 outline-none transition pb-0.5 truncate flex-1" value="${textboxInstanceNodeItem.textboxTitleNameString || 'Untitled Field Mapping Node'}">
-                            ${activityCursorHUDDOMString}
-                        </div>
-
-                        <div class="relative">
-                            <textarea id="ws-box-area-${textboxInstanceNodeItem.id}" oninput="executeSharedTextboxLiveContentStreamUpdate('${textboxInstanceNodeItem.id}', this.value)" onfocus="executeSharedTextboxCursorFocusAcquisition('${textboxInstanceNodeItem.id}')" onblur="executeSharedTextboxCursorFocusRelease('${textboxInstanceNodeItem.id}')" rows="5" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs text-slate-100 outline-none focus:border-blue-500 leading-relaxed font-mono" placeholder="Begin typing collaboration blueprints updates data points here...">${textboxInstanceNodeItem.textContentBodyPayloadData || ''}</textarea>
-                        </div>
-
-                        <div class="flex items-center justify-between text-[10px] font-bold border-t border-slate-800/80 pt-2 text-slate-400">
-                            <button onclick="executeSharedTextboxImportanceToggle('${textboxInstanceNodeItem.id}')" class="flex items-center gap-1 transition ${textboxInstanceNodeItem.isMarkedImportantFlagStatusTrue ? 'text-amber-400' : 'hover:text-amber-300'}">
-                                <i class="${textboxInstanceNodeItem.isMarkedImportantFlagStatusTrue ? 'fas' : 'far'} fa-star"></i> <span>${textboxInstanceNodeItem.isMarkedImportantFlagStatusTrue ? 'Important Field Matrix' : 'Mark As Important'}</span>
-                            </button>
-
-                            <button onclick="executeSharedTextboxInstanceTermination('${textboxInstanceNodeItem.id}')" class="text-slate-500 hover:text-red-400 transition flex items-center gap-0.5">
-                                <i class="fas fa-trash-alt text-[9px]"></i> Delete
-                            </button>
-                        </div>
-                    `;
-                    injectionGridDOMNode.appendChild(textboxCardDOMWrapNode);
-                });
-            });
-        }
-
-        window.createNewSharedTextboxInstance = async () => {
-            if (!activeWorkspaceId) return;
-
-            const activeWSDataState = globalWorkspacesIndexMap[activeWorkspaceId];
-            const activeCollectionCount = activeWSDataState.sharedDocumentTextboxesCollectionArrays ? Object.keys(activeWSDataState.sharedDocumentTextboxesCollectionArrays).length : 0;
-
-            // Enforce hard framework ceiling parameters limits of exactly up to 20 textboxes in each workspace
-            if (activeCollectionCount >= 20) {
-                window.showToast("Dynamic execution parameters block validation: Each unique group workspace environment structure can maintain up to 20 textboxes maximum.", "error");
-                return;
-            }
-
-            const uniqueBoxPushUIDKey = push(ref(db, `workspaces/${activeWorkspaceId}/sharedDocumentTextboxesCollectionArrays`)).key;
-            
-            const initialTextboxDataPayloadStructure = {
-                id: uniqueBoxPushUIDKey,
-                textboxTitleNameString: `Collaboration Canvas Entry Block #${activeCollectionCount + 1}`,
-                textContentBodyPayloadData: "",
-                isMarkedImportantFlagStatusTrue: false,
-                activeEditorUserUIDId: "",
-                activeEditorUserIdentityLabel: ""
-            };
-
-            await set(ref(db, `workspaces/${activeWorkspaceId}/sharedDocumentTextboxesCollectionArrays/${uniqueBoxPushUIDKey}`), initialTextboxDataPayloadStructure);
-            window.showToast("Shared document collaborative text frame container instantiated.");
-        };
-
-        window.executeSharedTextboxLiveContentStreamUpdate = async (textboxIdKey, realTimeTextStringInputValue) => {
-            if (!activeWorkspaceId) return;
-            
-            // Stream raw characters inputs changes values parameters directly across sync pipelines lines indexes instantly
-            await update(ref(db, `workspaces/${activeWorkspaceId}/sharedDocumentTextboxesCollectionArrays/${textboxIdKey}`), {
-                textContentBodyPayloadData: realTimeTextStringInputValue,
-                activeEditorUserUIDId: auth.currentUser.uid,
-                activeEditorUserIdentityLabel: myUserProfile.displayName
-            });
-        };
-
-        window.executeSharedTextboxMetadataUpdate = async (textboxIdKey) => {
-            if (!activeWorkspaceId) return;
-            const updatedTitleStringVal = document.getElementById(`ws-box-title-${textboxIdKey}`).value.trim() || "Untitled Field Mapping Node";
-            
-            await update(ref(db, `workspaces/${activeWorkspaceId}/sharedDocumentTextboxesCollectionArrays/${textboxIdKey}`), {
-                textboxTitleNameString: updatedTitleStringVal
-            });
-        };
-
-        window.executeSharedTextboxImportanceToggle = async (textboxIdKey) => {
-            if (!activeWorkspaceId || !globalWorkspacesIndexMap[activeWorkspaceId]) return;
-            
-            const currentBoxStateTargetObj = globalWorkspacesIndexMap[activeWorkspaceId].sharedDocumentTextboxesCollectionArrays[textboxIdKey];
-            const updatedToggleStateBoolValue = !currentBoxStateTargetObj.isMarkedImportantFlagStatusTrue;
-
-            await update(ref(db, `workspaces/${activeWorkspaceId}/sharedDocumentTextboxesCollectionArrays/${textboxIdKey}`), {
-                isMarkedImportantFlagStatusTrue: updatedToggleStateBoolValue
-            });
-        };
-
-        window.executeSharedTextboxCursorFocusAcquisition = async (textboxIdKey) => {
-            if (!activeWorkspaceId) return;
-            
-            // Sync remote cursors identifiers status tags blocks fields mapping targets
-            await update(ref(db, `workspaces/${activeWorkspaceId}/sharedDocumentTextboxesCollectionArrays/${textboxIdKey}`), {
-                activeEditorUserUIDId: auth.currentUser.uid,
-                activeEditorUserIdentityLabel: myUserProfile.displayName
-            });
-        };
-
-        window.executeSharedTextboxCursorFocusRelease = async (textboxIdKey) => {
-            if (!activeWorkspaceId) return;
-            
-            // Dissolve cursor tracking references identifiers properties out cleanly down the sync pipeline channels arrays
-            await update(ref(db, `workspaces/${activeWorkspaceId}/sharedDocumentTextboxesCollectionArrays/${textboxIdKey}`), {
-                activeEditorUserUIDId: "",
-                activeEditorUserIdentityLabel: ""
-            });
-        };
-
-        window.executeSharedTextboxInstanceTermination = async (textboxIdKey) => {
-            if (!activeWorkspaceId) return;
-            if (confirm("Permanently destroy this interactive shared document input textbox block? Data cannot be recovered.")) {
-                await remove(ref(db, `workspaces/${activeWorkspaceId}/sharedDocumentTextboxesCollectionArrays/${textboxIdKey}`));
-                window.showToast("Ecosystem workspace document frame instance destroyed.");
-            }
-        };
-
-        // PARSE ROUTING INVITATION TOKEN SEARCH PARAMS IMMEDIATELY UPON BOOT COMPILATION LIFECYCLES RUNS
-        function executeDeepLinkParsingQueryProcessingEngine() {
-            const URLSearchQueryObjectParameters = new URLSearchParams(window.location.search);
-            const interceptedJoinPINTokenCodeString = URLSearchQueryObjectParameters.get('joinWorkspacePINToken');
-            
-            if (interceptedJoinPINTokenCodeString && interceptedJoinPINTokenCodeString.length === 6) {
-                // Delay parsing slightly to allow state validation configurations layers initialization loops to finish loading profiles metrics
-                setTimeout(() => {
-                    const userActiveCheck = auth.currentUser;
-                    if (userActiveCheck) {
-                        document.getElementById('modal-join-pin').value = interceptedJoinPINTokenCodeString;
-                        window.openJoinWorkspaceModal();
-                        // Clear clean address path history maps targets blocks parameters out from windows traces browser history lines
-                        const cleanPathWithoutQueryStringsMatrix = window.location.protocol + "//" + window.location.host + window.location.pathname;
-                        window.history.pushState({ path: cleanPathWithoutQueryStringsMatrix }, '', cleanPathWithoutQueryStringsMatrix);
-                    }
-                }, 1500);
-            }
-        }
-
-        executeDeepLinkParsingQueryProcessingEngine();
-
-    </script>
+      }
+      card.className = 'textbox-card' + (n.important ? ' important' : '');
+      const ta = card.querySelector('textarea');
+      const activeTyping = card.dataset.typing === 'true';
+      if (!ta || document.activeElement !== ta) {
+        card.innerHTML = `
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <label style="display:flex;align-items:center;gap:6px;font-size:.85rem;"><input type="checkbox" style="width:auto;" ${n.important?'checked':''} onchange="toggleImportant('${wsId}','${id}', this.checked)"> Mark important</label>
+            <button class="btn" style="width:auto;padding:4px 8px;background:#fee2e2;color:#b91c1c;" onclick="deleteTextbox('${wsId}','${id}')"><i class="fas fa-trash"></i></button>
+          </div>
+          <textarea placeholder="Type here, everyone sees it live...">${n.content||''}</textarea>
+          <div class="textbox-meta"><span id="cursors-${id}"></span><span>${n.lastEditedBy ? 'Last edited by '+n.lastEditedBy+' at '+n.lastEditedAt : ''}</span></div>
+        `;
+      }
+      onValue(ref(db, `workspaces/${wsId}/textboxes/${id}/cursors`), (cSnap) => {
+        const cursors = cSnap.val() || {};
+        const others = Object.entries(cursors).filter(([uid])=>uid!==user.uid).map(([,c])=>c.name);
+        const lbl = document.getElementById('cursors-' + id);
+        if (lbl) lbl.innerText = others.length ? `${others.join(', ')} editing...` : '';
+      });
+    });
+    [...list.children].forEach(el => { if (!keys.includes(el.id.replace('note-',''))) el.remove(); });
+  });
+}
+window.addTextbox = async (wsId) => {
+  const snap = await get(ref(db, `workspaces/${wsId}/textboxes`));
+  const count = snap.val() ? Object.keys(snap.val()).length : 0;
+  if (count >= 20) return showToast("Maximum of 20 notes reached for this workspace", "error");
+  const newRef = push(ref(db, `workspaces/${wsId}/textboxes`));
+  await set(newRef, { content:'', important:false, lastEditedBy: currentUserProfile.displayName, lastEditedAt: new Date().toLocaleString() });
+};
+window.toggleImportant = async (wsId, id, val) => { await update(ref(db, `workspaces/${wsId}/textboxes/${id}`), { important: val }); };
+window.deleteTextbox = async (wsId, id) => { await remove(ref(db, `workspaces/${wsId}/textboxes/${id}`)); showToast("Note deleted"); };
+
+// ================= CHAT TAB =================
+let chatMentionMembers = {};
+function renderChatTab(container) {
+  const wsId = activeWorkspaceId;
+  const user = auth.currentUser;
+  container.innerHTML = `
+    <div class="card chat-wrap">
+      <div class="chat-messages" id="chat-messages"></div>
+      <div id="recording-ui" class="hidden recording-indicator" style="margin-bottom:8px;"><span class="rec-dot"></span> <span id="rec-timer">0:00</span> <button class="btn" style="width:auto;padding:4px 10px;background:#fee2e2;color:#b91c1c;" onclick="cancelRecording()">Cancel</button> <button class="btn" style="width:auto;padding:4px 10px;background:#dcfce7;color:#15803d;" onclick="stopRecordingAndSend('${wsId}')">Send</button></div>
+      <div class="chat-input-row">
+        <input type="file" id="chat-file-input" style="display:none;" accept="image/*,video/*,application/*">
+        <input type="file" id="chat-camera-input" style="display:none;" accept="image/*,video/*" capture="environment">
+        <button class="icon-btn" title="Attach file" onclick="document.getElementById('chat-file-input').click()"><i class="fas fa-paperclip"></i></button>
+        <button class="icon-btn" title="Camera" onclick="document.getElementById('chat-camera-input').click()"><i class="fas fa-camera"></i></button>
+        <button class="icon-btn" title="Voice message" onclick="startRecording('${wsId}')"><i class="fas fa-microphone"></i></button>
+        <textarea id="chat-text-input" rows="1" placeholder="Type a message... use @ to mention"></textarea>
+        <div class="mention-dropdown hidden" id="mention-dropdown"></div>
+        <button class="icon-btn" style="background:var(--primary);color:#fff;" onclick="sendChatMessage('${wsId}')"><i class="fas fa-paper-plane"></i></button>
+      </div>
+    </div>
+  `;
+  get(ref(db, `workspaces/${wsId}/members`)).then(snap => { chatMentionMembers = snap.val() || {}; });
+
+  const chatInput = document.getElementById('chat-text-input');
+  chatInput.addEventListener('input', () => {
+    const val = chatInput.value;
+    const atIndex = val.lastIndexOf('@');
+    const dropdown = document.getElementById('mention-dropdown');
+    if (atIndex !== -1 && (atIndex === 0 || val[atIndex-1] === ' ')) {
+      const query = val.slice(atIndex+1).toLowerCase();
+      const matches = Object.entries(chatMentionMembers).filter(([uid,m]) => m.displayName.toLowerCase().includes(query));
+      if (matches.length) {
+        dropdown.innerHTML = matches.map(([uid,m]) => `<div class="mention-item" onclick="insertMention('${uid}','${m.displayName.replace(/'/g,"\\'")}')"><img class="avatar-sm" src="${m.profilePic}" style="width:24px;height:24px;">${m.displayName}</div>`).join('');
+        dropdown.classList.remove('hidden');
+      } else dropdown.classList.add('hidden');
+    } else dropdown.classList.add('hidden');
+  });
+  chatInput.addEventListener('keydown', (e) => { if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(wsId); } });
+
+  document.getElementById('chat-file-input').addEventListener('change', (e)=>handleChatFileUpload(e, wsId));
+  document.getElementById('chat-camera-input').addEventListener('change', (e)=>handleChatFileUpload(e, wsId));
+
+  onValue(ref(db, `workspaces/${wsId}/chat`), (snap) => {
+    const data = snap.val() || {};
+    const msgList = document.getElementById('chat-messages');
+    if (!msgList) return;
+    const keys = Object.keys(data).sort((a,b)=> (data[a].ts||0)-(data[b].ts||0));
+    msgList.innerHTML = '';
+    keys.forEach(id => {
+      const m = data[id];
+      const row = document.createElement('div');
+      row.className = 'chat-msg';
+      let mediaHtml = '';
+      if (m.mediaUrl) {
+        if (m.mediaType === 'image') mediaHtml = `<div class="chat-media"><img src="${m.mediaUrl}"></div>`;
+        else if (m.mediaType === 'video') mediaHtml = `<div class="chat-media"><video controls src="${m.mediaUrl}"></video></div>`;
+        else if (m.mediaType === 'voice') mediaHtml = `<audio controls src="${m.mediaUrl}" style="margin-top:4px;"></audio>`;
+        else mediaHtml = `<a href="${m.mediaUrl}" target="_blank" style="color:var(--primary);font-size:.85rem;"><i class="fas fa-file"></i> Download file</a>`;
+      }
+      let text = m.text || '';
+      if (m.mentionNames) m.mentionNames.forEach(n => { text = text.replace(new RegExp('@'+n, 'g'), `<span class="mention-tag">@${n}</span>`); });
+      row.innerHTML = `<img class="avatar-sm" src="${m.profilePic}">
+        <div><div class="sender">${m.displayName}</div><div class="bubble">${text ? text : ''}${mediaHtml}</div><div class="ts">${m.timestampStr}</div></div>`;
+      msgList.appendChild(row);
+    });
+    msgList.scrollTop = msgList.scrollHeight;
+  });
+}
+
+window.insertMention = (uid, name) => {
+  const input = document.getElementById('chat-text-input');
+  const val = input.value;
+  const atIndex = val.lastIndexOf('@');
+  input.value = val.slice(0, atIndex) + '@' + name + ' ';
+  document.getElementById('mention-dropdown').classList.add('hidden');
+  input.focus();
+};
+
+window.sendChatMessage = async (wsId) => {
+  const user = auth.currentUser;
+  const input = document.getElementById('chat-text-input');
+  const text = input.value.trim();
+  if (!text) return;
+  const mentionNames = [];
+  const mentionUids = [];
+  Object.entries(chatMentionMembers).forEach(([uid,m]) => {
+    if (text.includes('@' + m.displayName)) { mentionNames.push(m.displayName); mentionUids.push(uid); }
+  });
+  const nowStr = new Date().toLocaleString();
+  const msgRef = push(ref(db, `workspaces/${wsId}/chat`));
+  await set(msgRef, {
+    uid:user.uid, displayName: currentUserProfile.displayName, profilePic: currentUserProfile.profilePic,
+    text, mentionNames, ts: Date.now(), timestampStr: nowStr
+  });
+  const wsSnap = await get(ref(db, `workspaces/${wsId}/name`));
+  const wsName = wsSnap.val();
+  for (const uid of mentionUids) {
+    const mRef = push(ref(db, `users/${uid}/mentions`));
+    await set(mRef, { workspaceName: wsName, fromDisplayName: currentUserProfile.displayName, timestamp: nowStr, seen:false });
+  }
+  input.value = '';
+};
+
+async function handleChatFileUpload(e, wsId) {
+  const file = e.target.files[0]; if (!file) return;
+  if (file.size > 70*1024*1024) { showToast("File exceeds the 70MB upload limit", "error"); return; }
+  const isImage = file.type.startsWith('image/');
+  const isVideo = file.type.startsWith('video/');
+  const resourceType = isImage || isVideo ? 'auto' : 'raw';
+  showToast("Uploading...");
+  const url = await uploadToCloudinary(file, resourceType);
+  if (!url) return;
+  const user = auth.currentUser;
+  const msgRef = push(ref(db, `workspaces/${wsId}/chat`));
+  await set(msgRef, {
+    uid:user.uid, displayName: currentUserProfile.displayName, profilePic: currentUserProfile.profilePic,
+    text:'', mediaUrl:url, mediaType: isImage?'image':(isVideo?'video':'file'), mentionNames:[], ts: Date.now(), timestampStr: new Date().toLocaleString()
+  });
+  e.target.value = '';
+}
+
+window.startRecording = async (wsId) => {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio:true });
+    recordedChunks = [];
+    mediaRecorder = new MediaRecorder(stream);
+    mediaRecorder.ondataavailable = (e) => { if (e.data.size>0) recordedChunks.push(e.data); };
+    mediaRecorder.start();
+    recordStartTime = Date.now();
+    document.getElementById('recording-ui').classList.remove('hidden');
+    recordTimerInterval = setInterval(() => {
+      const secs = Math.floor((Date.now()-recordStartTime)/1000);
+      document.getElementById('rec-timer').innerText = `${Math.floor(secs/60)}:${String(secs%60).padStart(2,'0')}`;
+      if (secs >= 480) stopRecordingAndSend(wsId); // 8 minute cap
+    }, 500);
+  } catch(err) { showToast("Microphone access denied", "error"); }
+};
+window.cancelRecording = () => {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+  clearInterval(recordTimerInterval);
+  document.getElementById('recording-ui').classList.add('hidden');
+  recordedChunks = [];
+};
+window.stopRecordingAndSend = (wsId) => {
+  if (!mediaRecorder) return;
+  mediaRecorder.onstop = async () => {
+    clearInterval(recordTimerInterval);
+    document.getElementById('recording-ui').classList.add('hidden');
+    const blob = new Blob(recordedChunks, { type:'audio/webm' });
+    const file = new File([blob], 'voice-message.webm', { type:'audio/webm' });
+    showToast("Uploading voice message...");
+    const url = await uploadToCloudinary(file, 'video');
+    if (!url) return;
+    const user = auth.currentUser;
+    const msgRef = push(ref(db, `workspaces/${wsId}/chat`));
+    await set(msgRef, {
+      uid:user.uid, displayName: currentUserProfile.displayName, profilePic: currentUserProfile.profilePic,
+      text:'', mediaUrl:url, mediaType:'voice', mentionNames:[], ts: Date.now(), timestampStr: new Date().toLocaleString()
+    });
+  };
+  if (mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+};
+
+// ---------- join via URL param ----------
+window.addEventListener('load', () => {
+  const params = new URLSearchParams(window.location.search);
+  const joinCode = params.get('join');
+  if (joinCode) {
+    onAuthStateChanged(auth, (user) => {
+      if (user && currentUserProfile && currentUserProfile.profileCompleted) {
+        document.getElementById('join-code-input').value = joinCode;
+      }
+    });
+  }
+});
+</script>
 </body>
 </html>
