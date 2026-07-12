@@ -156,10 +156,14 @@
         /* Audio Recording State Micro-animations */
         .btn-mic-active { background: var(--error) !important; color: white !important; animation: pulseRed 1.5s infinite ease-in-out; }
         @keyframes pulseRed { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+
+        /* Offline Bar Styling */
+        #offline-banner { background-color: var(--error); color: white; text-align: center; padding: 6px 10px; font-size: 0.85rem; font-weight: 600; width: 100%; display: none; z-index: 1002; }
     </style>
 </head>
 <body>
 
+    <div id="offline-banner"><i class="fas fa-wifi-slash"></i> You are currently offline. Some features may be unavailable.</div>
     <div id="toast-container"></div>
 
     <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
@@ -259,6 +263,10 @@
                 <label>Or Workspace Photo URL Reference</label>
                 <input type="text" id="ws-edit-url-fallback" placeholder="https://domain.com/image.png">
             </div>
+            <div class="input-group" style="display: flex; align-items: center; gap: 10px; margin-top: 15px;">
+                <input type="checkbox" id="ws-require-approval" style="width: auto; cursor: pointer;">
+                <label for="ws-require-approval" style="margin-bottom: 0; cursor: pointer; font-weight: 600;">Require Admin Approval to Join</label>
+            </div>
             <div style="display: flex; gap: 10px; margin-top: 20px;">
                 <button class="btn" style="background: #cbd5e1; flex: 1;" onclick="closeModal('edit-workspace-modal')">Cancel</button>
                 <button class="btn btn-primary" style="flex: 1;" onclick="submitWorkspaceModificationDetails()">Save Configurations</button>
@@ -308,6 +316,34 @@
             <div style="display: flex; gap: 10px; margin-top: 20px;">
                 <button class="btn" style="background: #cbd5e1; flex: 1;" onclick="closeModal('add-friends-modal')">Cancel</button>
                 <button class="btn btn-primary" style="flex: 1;" onclick="sendFriendRequestSubmit()">Send Request</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="camera-choice-modal" class="modal-popup hidden">
+        <div class="modal-content" style="text-align: center;">
+            <h2 style="margin-bottom: 20px;"><i class="fas fa-camera"></i> Select Camera Output</h2>
+            <p style="color: var(--text-muted); margin-bottom: 20px;">Choose whether you want to capture an image snapshot or record a video file stream.</p>
+            <div style="display: flex; gap: 15px;">
+                <button class="btn btn-primary" style="flex: 1; background: var(--success);" onclick="triggerCameraCaptureSubsystem('image')"><i class="fas fa-image"></i> Take Image</button>
+                <button class="btn btn-primary" style="flex: 1; background: var(--warning);" onclick="triggerCameraCaptureSubsystem('video')"><i class="fas fa-video"></i> Record Video</button>
+            </div>
+            <button class="btn" style="background: #cbd5e1; width: 100%; margin-top: 15px;" onclick="closeModal('camera-choice-modal')">Cancel</button>
+        </div>
+    </div>
+
+    <div id="camera-view-modal" class="modal-popup hidden">
+        <div class="modal-content" style="max-width: 550px; width: 95%;">
+            <h2 style="margin-bottom: 15px;" id="camera-view-title">Camera Capture View</h2>
+            <div style="background: #000; border-radius: 8px; overflow: hidden; position: relative; width: 100%; height: 320px; display: flex; align-items: center; justify-content: center;">
+                <video id="hardware-camera-stream-preview" autoplay playsinline muted style="width:100%; height:100%; object-fit: cover;"></video>
+                <video id="hardware-camera-playback-preview" controls class="hidden" style="width:100%; height:100%; object-fit: cover;"></video>
+                <img id="hardware-camera-image-preview" class="hidden" style="width:100%; height:100%; object-fit: contain;">
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
+                <button id="camera-capture-trigger-btn" class="btn btn-primary" style="flex: 1;" onclick="executeCameraCaptureAction()">Capture</button>
+                <button id="camera-done-trigger-btn" class="btn" style="flex: 1; background: var(--success); color: white;" disabled onclick="finalizeCameraUploadOperation()">Done</button>
+                <button class="btn" style="background: #cbd5e1; flex: 1;" onclick="closeCameraViewportSubsystem()">Cancel</button>
             </div>
         </div>
     </div>
@@ -367,8 +403,10 @@
             <div class="side-panel" id="dm-panel" style="flex:1; display:none;">
                 <h3 id="dm-target-name">Direct Messaging</h3>
                 <div id="dm-chat-box" style="height: 300px; overflow-y:auto; border: 1px solid #e2e8f0; padding:10px; border-radius:8px; background:#f8fafc;"></div>
-                <div style="display:flex; gap:8px;">
-                    <input type="text" id="dm-input" placeholder="Type private message...">
+                <div id="dm-chat-typing-indicator" class="typing-indicator"></div>
+                <div style="display:flex; gap:8px; align-items: center; flex-wrap: wrap;">
+                    <input type="text" id="dm-input" placeholder="Type private message..." style="flex: 1;" oninput="handleDmChatInputInteraction(this)">
+                    <button class="btn" id="dm-mic-btn" style="padding:12px 16px; font-size:0.9rem; background:#edf2f7; width: auto;" onclick="togglePrivateDmAudioRecordingSubsystem()"><i class="fas fa-microphone"></i></button>
                     <button class="btn btn-primary" style="width:auto;" onclick="sendPrivateMessage()"><i class="fas fa-paper-plane"></i></button>
                 </div>
             </div>
@@ -396,6 +434,11 @@
 
         <div class="workspace-layout">
             <div class="collab-area">
+                <div class="app-card id-join-requests-panel hidden" id="ws-join-requests-card">
+                    <h3 style="margin-bottom:12px;"><i class="fas fa-user-plus" style="color: var(--warning);"></i> User Request to join workspace</h3>
+                    <div id="ws-join-requests-list" class="tasks-box-container"></div>
+                </div>
+
                 <div class="app-card">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
                         <h3><i class="fas fa-tasks" style="color:var(--primary)"></i> Realtime Collaborative Tasks</h3>
@@ -439,6 +482,7 @@
                             
                             <div class="chat-controls">
                                 <label style="cursor:pointer;" title="Upload File (<70MB)"><i class="fas fa-paperclip" style="font-size:1.2rem; color:var(--text-muted);"></i><input type="file" id="chat-file-input" style="display:none;" onchange="uploadChatMediaFile(this)"></label>
+                                <button class="btn" style="padding:4px 8px; font-size:0.75rem; background:#edf2f7; border: none; cursor: pointer; color: var(--text-main);" onclick="openCameraChoiceModal()"><i class="fas fa-camera"></i> Camera</button>
                                 <button class="btn" id="chat-mic-btn" style="padding:4px 8px; font-size:0.75rem; background:#edf2f7;" onclick="toggleAudioRecordingSubsystem()"><i class="fas fa-microphone"></i> Record</button>
                                 <button class="btn" style="padding:4px 8px; font-size:0.75rem; background:#edf2f7;" onclick="openPollCreationDialog()"><i class="fas fa-poll-h"></i> Poll</button>
                                 <button class="btn btn-primary" style="width:auto; padding:6px 16px; margin-left:auto;" onclick="sendTeamChatMessage()"><i class="fas fa-paper-plane"></i></button>
@@ -543,15 +587,42 @@
         let globalMediaRecorderInstance = null;
         let accumulatedAudioChunksBuffer = [];
 
+        // Camera Tracking System Memory Variables
+        let cameraCaptureMode = "image"; 
+        let cameraLiveHardwareStream = null;
+        let cameraMediaRecorderInstance = null;
+        let cameraRecordedChunksBuffer = [];
+        let cameraCapturedBlobResult = null;
+
+        // Private DM Audio Recording Trackers
+        let dmMediaRecorderInstance = null;
+        let dmAccumulatedAudioChunksBuffer = [];
+
         // --- Initialization Hooks & Route Routing Hooks ---
         window.addEventListener('DOMContentLoaded', () => {
             parseIncomingDeepLinks();
             calculateFeedbackDynamicStates(2.5);
+            monitorNetworkOnlineStatus();
         });
+
+        // Online Status Subsystem Monitor
+        function monitorNetworkOnlineStatus() {
+            const banner = document.getElementById('offline-banner');
+            const updateStatus = () => {
+                if(navigator.onLine) {
+                    banner.style.display = "none";
+                } else {
+                    banner.style.display = "block";
+                }
+            };
+            window.addEventListener('online', updateStatus);
+            window.addEventListener('offline', updateStatus);
+            updateStatus();
+        }
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                if (!user.emailVerified && user.providerData && user.providerData.length > 0 && user.providerData[0].providerId === 'password') {
+                if (!user.emailVerified && user.providerData[0].providerId === 'password') {
                     showSection('verify-section');
                 } else {
                     document.getElementById('nav-user').classList.remove('hidden');
@@ -574,14 +645,13 @@
                     currentUserProfile = profile;
                     document.getElementById('profile-drawer-title').innerText = "Complete Your Profile";
                     document.getElementById('profile-drawer').classList.remove('hidden');
-                    showSection('friends-dashboard');
                 } else {
                     currentUserProfile = profile;
                     document.getElementById('user-display-name').innerText = profile.displayName;
                     document.getElementById('my-friend-code').innerText = profile.friendCode || "------";
                     document.getElementById('my-uid').innerText = user.uid;
                     
-                    // FIXED: Aligned target redirection ID calculation from 'auth-container' to 'auth-section'
+                    // Check if user is currently looking at the login page/auth view or verification view, routing them into the internal app UI view safely
                     const currentActiveSectionId = document.querySelector('.dashboard:not(.hidden), .auth-container:not(.hidden)')?.id;
                     if (!currentActiveSectionId || currentActiveSectionId === 'auth-section' || currentActiveSectionId === 'verify-section') {
                         if (activeWorkspaceId) {
@@ -665,7 +735,8 @@
                 photo: picUrl,
                 code: targetWsCode,
                 creator: auth.currentUser.uid,
-                membersCount: 1
+                membersCount: 1,
+                requireApproval: false
             };
 
             await set(ref(db, `workspaces/${targetWsId}/meta`), initWorkspaceObject);
@@ -698,12 +769,40 @@
                     const ws = child.val();
                     if(ws.meta && ws.meta.code === codeInput) {
                         matchFound = true;
-                        executeJoinSequence(child.key, ws);
+                        if(ws.meta.requireApproval) {
+                            executeJoinRequestSequence(child.key, ws);
+                        } else {
+                            executeJoinSequence(child.key, ws);
+                        }
                     }
                 });
                 if(!matchFound) showToast("Workspace not found", "error");
             }, { onlyOnce: true });
         };
+
+        async function executeJoinRequestSequence(wsId, wsPayload) {
+            if (wsPayload.members && wsPayload.members[auth.currentUser.uid]) {
+                showToast("You are already a member of this workspace!", "error");
+                closeModal('join-workspace-modal');
+                switchActiveWorkspaceContext(wsId);
+                return;
+            }
+            if (wsPayload.join_requests && wsPayload.join_requests[auth.currentUser.uid]) {
+                showToast("Your request to join this workspace is already pending review.", "warning");
+                closeModal('join-workspace-modal');
+                return;
+            }
+
+            await set(ref(db, `workspaces/${wsId}/join_requests/${auth.currentUser.uid}`), {
+                uid: auth.currentUser.uid,
+                displayName: currentUserProfile.displayName,
+                profilePic: currentUserProfile.profilePic,
+                timestamp: Date.now()
+            });
+
+            closeModal('join-workspace-modal');
+            showToast("Join request sent. Admin approval required.", "success");
+        }
 
         async function executeJoinSequence(wsId, wsPayload) {
             // Pre-flight structural membership tests
@@ -793,6 +892,7 @@
             listenWorkspaceMembersDirectory();
             bindWorkspaceTasksChannelSyncStream();
             bindWorkspaceSystemActivityLogPipeline();
+            bindWorkspaceJoinRequestsPipeline();
         }
 
         function listenWorkspaceMembersDirectory() {
@@ -818,6 +918,63 @@
                 modifyBtn.classList.add('hidden');
             }
         }
+
+        function bindWorkspaceJoinRequestsPipeline() {
+            const requestsCard = document.getElementById('ws-join-requests-card');
+            const requestsContainer = document.getElementById('ws-join-requests-list');
+
+            onValue(ref(db, `workspaces/${activeWorkspaceId}/join_requests`), (snapshot) => {
+                const myMemberRecord = window.activeWorkspaceMembers?.find(m => m.uid === auth.currentUser.uid);
+                const isManager = myMemberRecord && (myMemberRecord.role === 'creator' || myMemberRecord.role === 'admin');
+
+                if(!snapshot.exists() || !isManager) {
+                    requestsCard.classList.add('hidden');
+                    requestsContainer.innerHTML = '';
+                    return;
+                }
+
+                requestsCard.classList.remove('hidden');
+                requestsContainer.innerHTML = '';
+
+                snapshot.forEach(child => {
+                    const req = child.val();
+                    const row = document.createElement('div');
+                    row.className = "task-row-item";
+                    row.innerHTML = `
+                        <div style="display:flex; align-items:center; gap:10px; flex:1;">
+                            <img src="${req.profilePic || ''}" style="width:28px; height:28px; border-radius:50%; object-fit:cover; background:#cbd5e1;">
+                            <span style="font-size:0.9rem; font-weight:600; color:var(--text-main);">${req.displayName}</span>
+                        </div>
+                        <div style="display:flex; gap:6px;">
+                            <button class="btn btn-primary" style="padding:4px 10px; font-size:0.8rem; background:var(--success); width:auto;" onclick="processWorkspaceJoinRequest('${req.uid}', true, '${req.displayName.replace(/'/g, "\\'")}', '${req.profilePic || ''}')">Approve</button>
+                            <button class="btn" style="padding:4px 10px; font-size:0.8rem; background:var(--error); color:white; width:auto;" onclick="processWorkspaceJoinRequest('${req.uid}', false, '${req.displayName.replace(/'/g, "\\'")}')">Deny</button>
+                        </div>
+                    `;
+                    requestsContainer.appendChild(row);
+                });
+            });
+        }
+
+        window.processWorkspaceJoinRequest = async (targetUid, isApproved, displayName, profilePic) => {
+            if(isApproved) {
+                const meta = workspaceMetadataCache[activeWorkspaceId];
+                const currentCount = meta?.membersCount || 0;
+                
+                await update(ref(db, `workspaces/${activeWorkspaceId}/meta`), { membersCount: currentCount + 1 });
+                await set(ref(db, `workspaces/${activeWorkspaceId}/members/${targetUid}`), {
+                    uid: targetUid,
+                    role: 'member',
+                    displayName: displayName,
+                    profilePic: profilePic
+                });
+                await set(ref(db, `users/${targetUid}/workspaces/${activeWorkspaceId}`), true);
+                await appendLogTraceEvent(activeWorkspaceId, `approved membership request for ${displayName}.`);
+                showToast(`Approved ${displayName} to join.`);
+            } else {
+                showToast(`Denied request from ${displayName}.`);
+            }
+            await remove(ref(db, `workspaces/${activeWorkspaceId}/join_requests/${targetUid}`));
+        };
 
         window.renderMemberList = () => {
             const query = document.getElementById('member-search').value.toLowerCase();
@@ -917,6 +1074,7 @@
             
             document.getElementById('ws-edit-name').value = currentMetadata.name || "";
             document.getElementById('ws-edit-url-fallback').value = currentMetadata.photo || "";
+            document.getElementById('ws-require-approval').checked = currentMetadata.requireApproval || false;
             document.getElementById('ws-edit-file').value = null;
             document.getElementById('edit-workspace-modal').classList.remove('hidden');
         };
@@ -925,6 +1083,7 @@
             const targetWorkspaceLookupId = activeWorkspaceId;
             const updatedTitleString = document.getElementById('ws-edit-name').value.trim();
             const directUrlValue = document.getElementById('ws-edit-url-fallback').value.trim();
+            const requireApprovalState = document.getElementById('ws-require-approval').checked;
             const fileAttachmentNode = document.getElementById('ws-edit-file').files[0];
 
             if(!updatedTitleString) return showToast("Workspace contextual mapping names cannot be left blank", "error");
@@ -938,7 +1097,8 @@
 
             const updatesMap = {
                 name: updatedTitleString,
-                photo: targetOutputUrl
+                photo: targetOutputUrl,
+                requireApproval: requireApprovalState
             };
 
             await update(ref(db, `workspaces/${targetWorkspaceLookupId}/meta`), updatesMap);
@@ -1371,6 +1531,147 @@
             });
         }
 
+        // --- Camera Features Realtime Subsystem Core Logic ---
+        window.openCameraChoiceModal = () => {
+            if (!activeWorkspaceId) return showToast("Activate workspace frame focus first.", "error");
+            document.getElementById('camera-choice-modal').classList.remove('hidden');
+        };
+
+        window.triggerCameraCaptureSubsystem = async (mode) => {
+            cameraCaptureMode = mode;
+            closeModal('camera-choice-modal');
+
+            document.getElementById('camera-view-title').innerText = mode === "image" ? "Camera Capture Snapshot" : "Camera Record Video Stream";
+            document.getElementById('camera-capture-trigger-btn').innerText = mode === "image" ? "Capture Snapshot" : "Start Video Recording";
+            
+            // Reset modal states preview elements layouts nodes
+            document.getElementById('hardware-camera-stream-preview').classList.remove('hidden');
+            document.getElementById('hardware-camera-playback-preview').classList.add('hidden');
+            document.getElementById('hardware-camera-image-preview').classList.add('hidden');
+            document.getElementById('camera-done-trigger-btn').disabled = true;
+
+            cameraCapturedBlobResult = null;
+            cameraRecordedChunksBuffer = [];
+
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                return showToast("Browser framework configuration blocks camera hardware integrations.", "error");
+            }
+
+            try {
+                showToast("Requesting camera system configuration permission access...", "success");
+                cameraLiveHardwareStream = await navigator.mediaDevices.getUserMedia({
+                    video: true,
+                    audio: mode === "video"
+                });
+                
+                const liveVideoContainer = document.getElementById('hardware-camera-stream-preview');
+                liveVideoContainer.srcObject = cameraLiveHardwareStream;
+                document.getElementById('camera-view-modal').classList.remove('hidden');
+            } catch (err) {
+                showToast(`Camera capture framework permission denied: ${err.message}`, "error");
+            }
+        };
+
+        window.executeCameraCaptureAction = () => {
+            if (cameraCaptureMode === "image") {
+                const liveVideoContainer = document.getElementById('hardware-camera-stream-preview');
+                const canvasNodeElement = document.createElement('canvas');
+                canvasNodeElement.width = liveVideoContainer.videoWidth || 640;
+                canvasNodeElement.height = liveVideoContainer.videoHeight || 480;
+                
+                const canvasContext2d = canvasNodeElement.getContext('2d');
+                canvasContext2d.drawImage(liveVideoContainer, 0, 0, canvasNodeElement.width, canvasNodeElement.height);
+                
+                canvasNodeElement.toBlob((blob) => {
+                    cameraCapturedBlobResult = blob;
+                    
+                    const imagePreviewContainer = document.getElementById('hardware-camera-image-preview');
+                    imagePreviewContainer.src = URL.createObjectURL(blob);
+                    
+                    liveVideoContainer.classList.add('hidden');
+                    imagePreviewContainer.classList.remove('hidden');
+                    
+                    document.getElementById('camera-done-trigger-btn').disabled = false;
+                    showToast("Snapshot taken successfully. Click Done to submit layout.", "success");
+                }, 'image/jpeg');
+
+            } else if (cameraCaptureMode === "video") {
+                const triggerButton = document.getElementById('camera-capture-trigger-btn');
+                
+                if (cameraMediaRecorderInstance && cameraMediaRecorderInstance.state === "recording") {
+                    cameraMediaRecorderInstance.stop();
+                    triggerButton.innerText = "Start Video Recording";
+                    return;
+                }
+
+                cameraRecordedChunksBuffer = [];
+                cameraMediaRecorderInstance = new MediaRecorder(cameraLiveHardwareStream);
+                
+                cameraMediaRecorderInstance.ondataavailable = (event) => {
+                    if (event.data && event.data.size > 0) {
+                        cameraRecordedChunksBuffer.push(event.data);
+                    }
+                };
+
+                cameraMediaRecorderInstance.onstop = () => {
+                    cameraCapturedBlobResult = new Blob(cameraRecordedChunksBuffer, { type: 'video/webm' });
+                    
+                    const playbackContainer = document.getElementById('hardware-camera-playback-preview');
+                    playbackContainer.src = URL.createObjectURL(cameraCapturedBlobResult);
+                    
+                    document.getElementById('hardware-camera-stream-preview').classList.add('hidden');
+                    playbackContainer.classList.remove('hidden');
+                    
+                    document.getElementById('camera-done-trigger-btn').disabled = false;
+                    showToast("Video recording aggregated successfully.", "success");
+                };
+
+                cameraMediaRecorderInstance.start();
+                triggerButton.innerText = "Stop Recording";
+                showToast("Recording live video track timeline feed elements...", "success");
+            }
+        };
+
+        window.finalizeCameraUploadOperation = async () => {
+            if (!cameraCapturedBlobResult) return;
+            
+            showToast("Streaming camera captured payload frames to repository...", "success");
+            closeCameraViewportSubsystem();
+
+            const fileExtension = cameraCaptureMode === "image" ? "jpg" : "webm";
+            const fileMimeType = cameraCaptureMode === "image" ? "image/jpeg" : "video/webm";
+            const compiledMediaFileObj = new File([cameraCapturedBlobResult], `camera_capture_${Date.now()}.${fileExtension}`, { type: fileMimeType });
+
+            try {
+                const remoteUrlCloudResult = await uploadMediaToCloudinary(compiledMediaFileObj);
+                
+                const chatLogPushEndpointRef = push(ref(db, `workspaces/${activeWorkspaceId}/chat/messages`));
+                await set(chatLogPushEndpointRef, {
+                    type: 'media',
+                    fileUrl: remoteUrlCloudResult,
+                    mime: fileMimeType,
+                    senderUid: auth.currentUser.uid,
+                    senderName: currentUserProfile.displayName,
+                    senderPic: currentUserProfile.profilePic,
+                    timestamp: Date.now()
+                });
+
+                await appendLogTraceEvent(activeWorkspaceId, `uploaded a live camera captured ${cameraCaptureMode} asset inside chat streams logs.`);
+                showToast("Camera content synchronized distributed successfully.");
+            } catch (err) {
+                showToast(`Camera payload distribution upload collapse failure: ${err.message}`, "error");
+            }
+        };
+
+        window.closeCameraViewportSubsystem = () => {
+            if (cameraLiveHardwareStream) {
+                cameraLiveHardwareStream.getTracks().forEach(track => track.stop());
+                cameraLiveHardwareStream = null;
+            }
+            cameraMediaRecorderInstance = null;
+            closeModal('camera-view-modal');
+        };
+
         // --- Cloudinary Integration Engine Layer Implementation ---
         async function uploadMediaToCloudinary(fileObject) {
             const formPayload = new FormData();
@@ -1759,12 +2060,41 @@
                     const line = document.createElement('div');
                     line.style.marginBottom = "8px";
                     line.style.fontSize = "0.85rem";
-                    line.innerHTML = `<strong>${msg.senderName}:</strong> <span>${msg.text}</span>`;
+                    
+                    let inlinePayload = '';
+                    if(msg.type === 'audio') {
+                        inlinePayload = `<audio src="${msg.fileUrl}" controls style="max-width:100%; display:block; margin-top:4px;"></audio>`;
+                    } else {
+                        inlinePayload = `<span>${msg.text}</span>`;
+                    }
+                    
+                    line.innerHTML = `<strong>${msg.senderName}:</strong> ${inlinePayload}`;
                     box.appendChild(line);
                 });
                 box.scrollTop = box.scrollHeight;
             });
+
+            // Sync private DM typing feedback channels
+            onValue(ref(db, `direct_messages_typing/${channelIdTokenKey}/${friendUid}`), (typingSnap) => {
+                const typingIndicator = document.getElementById('dm-chat-typing-indicator');
+                if(typingSnap.exists() && typingSnap.val()) {
+                    typingIndicator.innerText = `${name} is typing...`;
+                } else {
+                    typingIndicator.innerText = '';
+                }
+            });
         }
+
+        window.handleDmChatInputInteraction = async (inputEl) => {
+            if(!activeDMPartnerUid) return;
+            const channelIdTokenKey = auth.currentUser.uid < activeDMPartnerUid ? `${auth.currentUser.uid}_${activeDMPartnerUid}` : `${activeDMPartnerUid}_${auth.currentUser.uid}`;
+            const typingRef = ref(db, `direct_messages_typing/${channelIdTokenKey}/${auth.currentUser.uid}`);
+            if(inputEl.value.trim().length > 0) {
+                await set(typingRef, true);
+            } else {
+                await remove(typingRef);
+            }
+        };
 
         window.sendPrivateMessage = async () => {
             const input = document.getElementById('dm-input');
@@ -1775,6 +2105,7 @@
             const logPushEndpointRef = push(ref(db, `direct_messages/${channelIdTokenKey}`));
 
             await set(logPushEndpointRef, {
+                type: 'text',
                 text: txt,
                 senderUid: auth.currentUser.uid,
                 senderName: currentUserProfile.displayName,
@@ -1782,6 +2113,70 @@
             });
 
             input.value = '';
+            await remove(ref(db, `direct_messages_typing/${channelIdTokenKey}/${auth.currentUser.uid}`));
+        };
+
+        // --- Voice Messaging System inside Private Friends DMs ---
+        window.togglePrivateDmAudioRecordingSubsystem = async () => {
+            if (!activeDMPartnerUid) return showToast("Choose a dynamic connection conversation partner thread first.", "error");
+            const micBtnElement = document.getElementById('dm-mic-btn');
+            const channelIdTokenKey = auth.currentUser.uid < activeDMPartnerUid ? `${auth.currentUser.uid}_${activeDMPartnerUid}` : `${activeDMPartnerUid}_${auth.currentUser.uid}`;
+
+            if (dmMediaRecorderInstance && dmMediaRecorderInstance.state === "recording") {
+                dmMediaRecorderInstance.stop();
+                micBtnElement.classList.remove('btn-mic-active');
+                micBtnElement.innerHTML = `<i class="fas fa-microphone"></i>`;
+                return;
+            }
+
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                return showToast("Browser software architecture blocks mic captures pipelines.", "error");
+            }
+
+            try {
+                showToast("Requesting audio alignment permission access controls...", "success");
+                const captureStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                
+                dmAccumulatedAudioChunksBuffer = [];
+                dmMediaRecorderInstance = new MediaRecorder(captureStream);
+
+                dmMediaRecorderInstance.ondataavailable = (event) => {
+                    if (event.data && event.data.size > 0) {
+                        dmAccumulatedAudioChunksBuffer.push(event.data);
+                    }
+                };
+
+                dmMediaRecorderInstance.onstop = async () => {
+                    const compositeAudioBlob = new Blob(dmAccumulatedAudioChunksBuffer, { type: 'audio/webm' });
+                    const audioFileObject = new File([compositeAudioBlob], `dm_voice_${Date.now()}.webm`, { type: 'audio/webm' });
+
+                    captureStream.getTracks().forEach(track => track.stop());
+                    showToast("Uploading friend private voice message data structure...", "success");
+
+                    try {
+                        const directUrl = await uploadMediaToCloudinary(audioFileObject);
+                        const dmPushRef = push(ref(db, `direct_messages/${channelIdTokenKey}`));
+                        
+                        await set(dmPushRef, {
+                            type: 'audio',
+                            fileUrl: directUrl,
+                            senderUid: auth.currentUser.uid,
+                            senderName: currentUserProfile.displayName,
+                            timestamp: Date.now()
+                        });
+                        showToast("Voice message distributed.");
+                    } catch (err) {
+                        showToast(`Private audio stream data sync down block error: ${err.message}`, "error");
+                    }
+                };
+
+                dmMediaRecorderInstance.start();
+                micBtnElement.classList.add('btn-mic-active');
+                micBtnElement.innerHTML = `<i class="fas fa-stop"></i>`;
+                showToast("Recording direct private voice chat message...", "success");
+            } catch (err) {
+                showToast(`Hardware capture access authorization denied: ${err.message}`, "error");
+            }
         };
 
         // --- Invitation Link Parser Matrix Algorithms ---
