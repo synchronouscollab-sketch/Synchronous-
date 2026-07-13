@@ -1,301 +1,2428 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nexus Call - Professional WebRTC Signaling</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    /* Custom Mirror effect for self-view video */
-    .mirror { transform: scaleX(-1); }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Synchronous | Realtime Collaboration Platform</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --error: #ef4444;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --sidebar-width: 300px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg); color: var(--text-main); line-height: 1.6; overflow-x: hidden; transition: margin-left 0.3s ease; }
+
+        /* Utility Classes */
+        .hidden { display: none !important; }
+        .btn { cursor: pointer; padding: 12px 24px; border-radius: 8px; border: none; font-weight: 600; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-primary { background: var(--primary); color: white; width: 100%; }
+        .btn-primary:hover { background: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2); }
+        .btn:active { transform: scale(0.95); }
+        .btn:disabled { background: #cbd5e1; cursor: not-allowed; }
+
+        @media (max-width: 768px) {
+            :root { --sidebar-width: 250px; }
+            nav { padding: 1rem 3%; }
+            .dashboard { padding: 0 15px; margin: 20px auto; }
+            .auth-container { margin: 40px 15px; padding: 25px; }
+            h1 { font-size: 1.5rem; }
+            .workspace-layout { flex-direction: column; }
+        }
+
+        /* Navigation */
+        nav { background: white; padding: 1rem 5%; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; }
+        .logo { font-size: 1.5rem; font-weight: 800; color: var(--primary); letter-spacing: -1px; cursor: pointer; }
+
+        /* Sidebar Menu */
+        .sidebar { position: fixed; left: calc(-1 * var(--sidebar-width)); top: 0; width: var(--sidebar-width); height: 100%; background: white; box-shadow: 5px 0 25px rgba(0,0,0,0.1); z-index: 1001; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); padding: 30px 20px; overflow-y: auto; }
+        .sidebar.active { left: 0; }
+        .sidebar-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.3); opacity: 0; visibility: hidden; transition: 0.3s; z-index: 1000; backdrop-filter: blur(2px); }
+        .sidebar-overlay.active { opacity: 1; visibility: visible; }
+        
+        .sidebar-section { margin-bottom: 25px; }
+        .sidebar-section h3 { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 10px; }
+        .sidebar-btn { width: 100%; text-align: left; background: #f1f5f9; padding: 10px 15px; border-radius: 8px; border: 1px solid #e2e8f0; font-weight: 600; font-size: 0.9rem; margin-bottom: 8px; cursor: pointer; display: flex; align-items: center; gap: 10px; color: var(--text-main); }
+        .sidebar-btn:hover { background: #e2e8f0; }
+        
+        .item-list { max-height: 150px; overflow-y: auto; margin-bottom: 10px; }
+        .list-item { padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; background: #fff; border: 1px solid #e2e8f0; }
+        .list-item:hover, .list-item.active { background: #eff6ff; border-color: var(--primary); }
+
+        /* Auth Container */
+        .auth-container { max-width: 400px; margin: 80px auto; padding: 40px; background: white; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+        .input-group { margin-bottom: 20px; position: relative; }
+        .input-group label { display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-muted); }
+        input, textarea, select { width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; outline: none; transition: 0.2s; background: #fff; font-size: 0.95rem; }
+        input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+
+        /* Modals / Drawers */
+        .modal-popup { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 2000; backdrop-filter: blur(4px); }
+        .modal-content { background: white; padding: 30px; border-radius: 20px; max-width: 450px; width: 90%; box-shadow: 0 20px 50px rgba(0,0,0,0.2); position: relative; }
+
+        /* Dashboard & Layout Architecture */
+        .dashboard { max-width: 1300px; margin: 30px auto; padding: 0 20px; }
+        .workspace-layout { display: flex; gap: 25px; margin-top: 20px; align-items: flex-start; }
+        .collab-area { flex: 1.3; display: flex; flex-direction: column; gap: 25px; min-width: 0; }
+        .side-panel { flex: 1; background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border: 1px solid #e2e8f0; display: flex; flex-direction: column; gap: 20px; }
+
+        /* Cards & Components */
+        .app-card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border: 1px solid #e2e8f0; position: relative; }
+
+        /* Shared Text Box Area */
+        .textbox-item { border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; margin-bottom: 12px; position: relative; background: #fff; transition: 0.2s; }
+        .textbox-item .textarea-node { width: 100%; min-height: 100px; padding: 12px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.95rem; resize: vertical; line-height: 1.5; outline: none; background: #ffffff; color: var(--text-main); font-family: inherit; }
+        .textbox-item .textarea-node:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+        .textbox-item.important { border-left: 5px solid var(--warning); background: #fffbeb; }
+        .textbox-header { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 8px; }
+        .textbox-actions { display: flex; gap: 10px; margin-top: 10px; justify-content: flex-end; align-items: center; }
+        .textbox-action-btn { font-size: 0.75rem; cursor: pointer; background: none; border: none; font-weight: 600; display: flex; align-items: center; gap: 4px; }
+        .cursor-indicator { font-size: 0.7rem; color: var(--primary); font-style: italic; margin-top: 4px; display: block; }
+
+        /* Chat System */
+        .chat-container { display: flex; flex-direction: column; height: 450px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; }
+        .chat-messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+        .chat-input-area { padding: 12px; border-top: 1px solid #e2e8f0; background: #f8fafc; position: relative; }
+        .chat-controls { display: flex; gap: 8px; margin-top: 8px; align-items: center; }
+        
+        .message-row { display: flex; gap: 10px; align-items: flex-start; }
+        .msg-avatar { width: 35px; height: 35px; border-radius: 50%; object-fit: cover; background: #cbd5e1; }
+        .msg-bubble { background: #f1f5f9; padding: 10px 14px; border-radius: 12px; font-size: 0.9rem; position: relative; max-width: 85%; width: 100%; }
+        .msg-username { font-weight: 700; font-size: 0.75rem; color: var(--text-main); margin-bottom: 2px; }
+        
+        /* Auto-Suggest Mention Dropdown */
+        .mention-dropdown { position: absolute; bottom: 100%; left: 12px; right: 12px; background: white; border: 1px solid #cbd5e1; border-radius: 8px; max-height: 150px; overflow-y: auto; z-index: 100; box-shadow: 0 -4px 15px rgba(0,0,0,0.1); }
+        .mention-item { padding: 10px; cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; gap: 8px; }
+        .mention-item:hover { background: #eff6ff; }
+
+        /* Poll Structure */
+        .poll-box { background: #fff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 15px; margin-top: 5px; width: 100%; max-width: 320px; }
+        .poll-question { font-weight: 600; margin-bottom: 10px; font-size: 0.9rem; }
+        .poll-option { background: #f8fafc; border: 1px solid #e2e8f0; padding: 8px; border-radius: 6px; margin-bottom: 6px; font-size: 0.8rem; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; }
+        .poll-option:hover { background: #edf2f7; }
+        .poll-info-block { font-size: 0.75rem; margin-top: 10px; background: #f1f5f9; padding: 8px; border-radius: 6px; color: var(--text-main); display: none; }
+
+        /* Realtime Task Components */
+        .tasks-box-container { display: flex; flex-direction: column; gap: 10px; max-height: 250px; overflow-y: auto; margin-top: 10px; }
+        .task-row-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; transition: 0.2s; }
+        .task-row-item:hover { background: #f1f5f9; }
+        .task-row-item.completed span { text-decoration: line-through; color: var(--text-muted); }
+
+        /* Live Activity Log Architecture */
+        .activity-log-frame { height: 160px; overflow-y: auto; background: #0f172a; border-radius: 8px; padding: 12px; color: #38bdf8; font-family: monospace; font-size: 0.8rem; display: flex; flex-direction: column; gap: 6px; border: 1px solid #1e293b; }
+        .activity-log-line { border-bottom: 1px dashed rgba(56, 189, 248, 0.15); padding-bottom: 4px; line-height: 1.4; }
+        .activity-log-line .act-time { color: #64748b; margin-right: 6px; }
+        .activity-log-line .act-user { color: #f43f5e; font-weight: bold; }
+
+        /* Feedback Emoji Animations */
+        .feedback-smiley-display { font-size: 3rem; text-align: center; margin-bottom: 10px; height: 60px; display: flex; align-items: center; justify-content: center; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .feedback-smiley-display.pop-animation { transform: scale(1.2); }
+        .stars-range-input { width: 100%; margin: 15px 0; accent-color: var(--warning); height: 8px; border-radius: 5px; cursor: pointer; }
+
+        /* Badges & Statuses */
+        .status-badge { font-size: 0.75rem; padding: 4px 10px; border-radius: 20px; font-weight: 600; text-transform: uppercase; }
+        .badge-admin { background: #fee2e2; color: #b91c1c; }
+        .badge-member { background: #f1f5f9; color: #475569; }
+
+        /* Toasts */
+        #toast-container { position: fixed; bottom: 30px; right: 30px; z-index: 9999; }
+        .toast { background: white; color: var(--text-main); padding: 16px 24px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); margin-top: 10px; display: flex; align-items: center; gap: 12px; min-width: 320px; border-left: 4px solid var(--primary); animation: slideInRight 0.3s ease-out forwards; }
+        .toast.success { border-color: var(--success); }
+        .toast.error { border-color: var(--error); }
+        .toast.mention { border-color: var(--warning); background: #fffdf5; }
+
+        /* Previews & Indicators */
+        .profile-pic-preview { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; display: block; margin: 10px auto; background: #e2e8f0; border: 2px solid var(--primary); }
+        .typing-indicator { font-size: 0.75rem; color: var(--text-muted); font-style: italic; min-height: 18px; margin-bottom: 4px; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .fade-in { animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        
+        /* Audio Recording State Micro-animations */
+        .btn-mic-active { background: var(--error) !important; color: white !important; animation: pulseRed 1.5s infinite ease-in-out; }
+        @keyframes pulseRed { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+
+        /* Offline Bar Styling */
+        #offline-banner { background-color: var(--error); color: white; text-align: center; padding: 6px 10px; font-size: 0.85rem; font-weight: 600; width: 100%; display: none; z-index: 1002; }
+    </style>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen flex items-center justify-center font-sans antialiased">
+<body>
 
-  <div class="w-full max-w-xl mx-4">
-    <div class="bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl p-8 backdrop-blur-md backdrop-filter">
-      
-      <div class="text-center mb-8">
-        <h1 class="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
-          Nexus Call
-        </h1>
-        <p class="text-sm text-slate-400 mt-2">Secure, instant peer-to-peer communications</p>
-      </div>
+    <div id="offline-banner"><i class="fas fa-wifi-slash"></i> You are currently offline. Some features may be unavailable.</div>
+    <div id="toast-container"></div>
 
-      <div id="auth-section" class="space-y-5">
-        <div>
-          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Email Address</label>
-          <input type="email" id="email" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors" placeholder="name@company.com">
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+    <div class="sidebar" id="sidebar">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 25px;">
+            <i class="fas fa-cubes" style="font-size: 1.5rem; color: var(--primary);"></i>
+            <h2>Synchronous</h2>
         </div>
-        <div>
-          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Password</label>
-          <input type="password" id="password" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors" placeholder="••••••••">
+        <hr style="opacity: 0.1; margin-bottom: 20px;">
+        
+        <div class="sidebar-section">
+            <h3>Collaboration</h3>
+            <button class="sidebar-btn" onclick="openCreateWorkspaceModal()"><i class="fas fa-plus-circle"></i> Create Workspace</button>
+            <button class="sidebar-btn" onclick="openJoinWorkspaceModal()"><i class="fas fa-sign-in-alt"></i> Join Workspace</button>
         </div>
 
-        <div class="grid grid-cols-2 gap-4 pt-2">
-          <button id="btn-login" class="bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition duration-150 ease-in-out shadow-lg shadow-blue-600/20">
-            Sign In
-          </button>
-          <button id="btn-signup" class="bg-slate-700 hover:bg-slate-600 active:bg-slate-800 text-slate-200 font-medium py-3 px-4 rounded-lg transition duration-150 ease-in-out">
-            Create Account
-          </button>
+        <div class="sidebar-section">
+            <h3>My Workspaces</h3>
+            <div id="my-workspaces-list" class="item-list"></div>
         </div>
 
-        <div class="relative my-6 flex py-2 items-center text-xs uppercase tracking-wider text-slate-500">
-          <div class="flex-grow border-t border-slate-700"></div>
-          <span class="flex-shrink mx-4">or continue with</span>
-          <div class="flex-grow border-t border-slate-700"></div>
+        <div class="sidebar-section">
+            <h3>Social Network</h3>
+            <button class="sidebar-btn" onclick="openAddFriendsModal()"><i class="fas fa-user-plus"></i> Add Friends</button>
+            <button class="sidebar-btn" onclick="showFriendsSection()"><i class="fas fa-users"></i> Friends List</button>
+            <button class="sidebar-btn" onclick="showFriendRequestsSection()"><i class="fas fa-user-clock"></i> Requests</button>
         </div>
 
-        <button id="btn-google" class="w-full flex items-center justify-center gap-3 bg-white hover:bg-slate-100 text-slate-900 font-medium py-3 px-4 rounded-lg transition duration-150 ease-in-out shadow-md">
-          <svg class="w-5 h-5" viewBox="0 0 24 24">
-            <path fill="#EA4335" d="M12.24 10.285V14.4h6.887c-.275 1.565-1.88 4.604-6.887 4.604-4.33 0-7.866-3.577-7.866-8s3.536-8 7.866-8c2.46 0 4.105 1.025 5.047 1.926l3.227-3.11C18.432 1.145 15.66 0 12.24 0 5.48 0 0 5.373 0 12s5.48 12 12.24 12c7.06 0 11.76-4.909 11.76-11.83 0-.796-.086-1.401-.194-1.885H12.24z"/>
-          </svg>
-          Google Workspace
-        </button>
-      </div>
-
-      <div id="app-section" class="hidden space-y-6">
-        <div class="flex items-center justify-between bg-slate-900 border border-slate-700/50 rounded-xl p-4">
-          <div class="overflow-hidden mr-2">
-            <p class="text-xs text-slate-400 font-mono truncate" id="user-email">user@domain.com</p>
-            <p class="text-lg font-bold text-emerald-400 tracking-widest mt-0.5" id="my-call-id">------</p>
-          </div>
-          <button id="btn-logout" class="text-xs font-medium text-slate-400 hover:text-rose-400 border border-slate-700 hover:border-rose-900 rounded-lg px-3 py-1.5 transition-colors">
-            Disconnect
-          </button>
+        <div class="sidebar-section" style="margin-top: 40px;">
+            <button class="sidebar-btn" onclick="openFeedbackModalDialog()" style="background: #fffbeb; border-color: #fef08a;"><i class="fas fa-star" style="color:var(--warning);"></i> Give feedback</button>
+            <button class="sidebar-btn" onclick="openProfileEditDrawer()" style="margin-top:8px; background: #f8fafc;"><i class="fas fa-user-cog"></i> Profile Settings</button>
         </div>
-
-        <div class="bg-slate-900/50 border border-slate-700/40 rounded-xl p-5 space-y-4">
-          <h3 class="text-sm font-semibold tracking-wide text-slate-300 uppercase">Initiate Outbound Session</h3>
-          
-          <div>
-            <input type="text" id="remote-id" maxlength="6" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-center text-xl font-mono tracking-widest text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500 transition-colors" placeholder="000000">
-          </div>
-
-          <label class="flex items-center gap-3 cursor-pointer py-1 group select-none">
-            <input type="checkbox" id="enable-video" class="w-4 h-4 rounded border-slate-700 text-indigo-600 bg-slate-900 focus:ring-indigo-600 focus:ring-offset-slate-900">
-            <span class="text-sm text-slate-400 group-hover:text-slate-200 transition-colors">Transmit Video Stream</span>
-          </label>
-
-          <button id="btn-start-call" class="w-full bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-medium py-3 px-4 rounded-lg transition duration-150 ease-in-out shadow-lg shadow-indigo-600/20">
-            Establish Connection
-          </button>
-        </div>
-
-        <div class="grid grid-cols-2 gap-4">
-          <div class="relative bg-slate-900 aspect-video rounded-xl overflow-hidden border border-slate-700/60">
-            <video id="local-video" autoplay playsinline muted class="w-full h-full object-cover mirror bg-slate-950"></video>
-            <span class="absolute bottom-2 left-2 px-2 py-0.5 bg-slate-900/80 backdrop-blur-sm rounded text-[10px] uppercase font-mono tracking-wider text-slate-300">Local Stream</span>
-          </div>
-          <div class="relative bg-slate-900 aspect-video rounded-xl overflow-hidden border border-slate-700/60">
-            <video id="remote-video" autoplay playsinline class="w-full h-full object-cover bg-slate-950"></video>
-            <span class="absolute bottom-2 left-2 px-2 py-0.5 bg-slate-900/80 backdrop-blur-sm rounded text-[10px] uppercase font-mono tracking-wider text-slate-300">Remote Stream</span>
-          </div>
-        </div>
-      </div>
-
     </div>
-  </div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
-    import { getAuth, signInWithPopup, GoogleAuthProvider, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
-    import { getDatabase, ref, runTransaction, get, onValue, update, set, off } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-database.js";
+    <nav>
+        <div class="logo" onclick="toggleSidebar()"><i class="fas fa-bars" style="margin-right: 15px; color: var(--text-muted); font-size: 1.2rem;"></i><i class="fas fa-sync-alt"></i> Synchronous</div>
+        <div id="nav-user" class="hidden">
+            <span id="user-display-name" style="margin-right: 15px; font-weight: 600; color: var(--text-main);"></span>
+            <button class="btn" style="background: #fee2e2; color: #b91c1c; padding: 8px 16px;" onclick="logout()">Logout</button>
+        </div>
+    </nav>
 
-    // Standard Client Config Configuration
-    const firebaseConfig = {
-      apiKey: "AIzaSyDbkG2e_p7Q_RHAoEHGVn8OC9jZU_E9XGM",
-      authDomain: "agorateam.firebaseapp.com",
-      projectId: "agorateam",
-      storageBucket: "agorateam.firebasestorage.app",
-      messagingSenderId: "215497316167",
-      appId: "1:215497316167:web:490365993e80e565251e62"
-    };
+    <div id="profile-drawer" class="modal-popup hidden">
+        <div class="modal-content">
+            <h2 id="profile-drawer-title" style="margin-bottom: 20px;"><i class="fas fa-user-circle"></i> Complete Your Profile</h2>
+            <div class="input-group">
+                <label>Display Name</label>
+                <input type="text" id="prof-display-name" placeholder="John Doe">
+            </div>
+            <div class="input-group">
+                <label>Description / Bio</label>
+                <textarea id="prof-bio" rows="3" placeholder="Tell us about yourself..."></textarea>
+            </div>
+            <div class="input-group">
+                <label>Profile Picture</label>
+                <input type="file" id="prof-pic-file" accept="image/*" onchange="previewImage(this, 'prof-preview')">
+                <img id="prof-preview" class="profile-pic-preview" src="" alt="Preview">
+            </div>
+            <div style="margin-top: 15px; font-size: 0.8rem; color: var(--text-muted);" id="friend-code-display-area" class="hidden">
+                <strong>Your Friend Code:</strong> <span id="my-friend-code">------</span><br>
+                <strong>Your Unique UID:</strong> <span id="my-uid" style="font-size:0.7rem; word-break:all;">------</span>
+            </div>
+            <button id="profile-save-btn" class="btn btn-primary" style="margin-top: 20px;" onclick="saveProfileData()">Save Details</button>
+        </div>
+    </div>
 
-    // Initialization
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getDatabase(app);
-    const googleProvider = new GoogleAuthProvider();
+    <div id="create-workspace-modal" class="modal-popup hidden">
+        <div class="modal-content">
+            <h2 style="margin-bottom: 20px;">Create New Workspace</h2>
+            <div class="input-group">
+                <label>Workspace Name</label>
+                <input type="text" id="ws-create-name" placeholder="Engineering Team">
+            </div>
+            <div class="input-group">
+                <label>Workspace Picture (Optional)</label>
+                <input type="file" id="ws-create-file" accept="image/*">
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="btn" style="background: #cbd5e1; flex: 1;" onclick="closeModal('create-workspace-modal')">Cancel</button>
+                <button class="btn btn-primary" style="flex: 1;" onclick="createNewWorkspaceSubmit()">Create</button>
+            </div>
+        </div>
+    </div>
 
-    // DOM UI Hooks
-    const authSection = document.getElementById('auth-section');
-    const appSection = document.getElementById('app-section');
-    const emailInput = document.getElementById('email');
-    const passwordInput = document.getElementById('password');
-    const btnLogin = document.getElementById('btn-login');
-    const btnSignup = document.getElementById('btn-signup');
-    const btnGoogle = document.getElementById('btn-google');
-    const btnLogout = document.getElementById('btn-logout');
-    const userEmailDisplay = document.getElementById('user-email');
-    const myCallIdDisplay = document.getElementById('my-call-id');
-    const remoteIdInput = document.getElementById('remote-id');
-    const btnStartCall = document.getElementById('btn-start-call');
-    const enableVideoCheckbox = document.getElementById('enable-video');
-    const localVideo = document.getElementById('local-video');
-    const remoteVideo = document.getElementById('remote-video');
+    <div id="edit-workspace-modal" class="modal-popup hidden">
+        <div class="modal-content">
+            <h2 style="margin-bottom: 20px;">Modify Team Settings</h2>
+            <div class="input-group">
+                <label>Workspace Name</label>
+                <input type="text" id="ws-edit-name" placeholder="Updated Team Title">
+            </div>
+            <div class="input-group">
+                <label>Workspace Picture (Optional File Upload)</label>
+                <input type="file" id="ws-edit-file" accept="image/*">
+            </div>
+            <div class="input-group">
+                <label>Or Workspace Photo URL Reference</label>
+                <input type="text" id="ws-edit-url-fallback" placeholder="https://domain.com/image.png">
+            </div>
+            <div class="input-group" style="display: flex; align-items: center; gap: 10px; margin-top: 15px;">
+                <input type="checkbox" id="ws-require-approval" style="width: auto; cursor: pointer;">
+                <label for="ws-require-approval" style="margin-bottom: 0; cursor: pointer; font-weight: 600;">Require Admin Approval to Join</label>
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="btn" style="background: #cbd5e1; flex: 1;" onclick="closeModal('edit-workspace-modal')">Cancel</button>
+                <button class="btn btn-primary" style="flex: 1;" onclick="submitWorkspaceModificationDetails()">Save Configurations</button>
+            </div>
+        </div>
+    </div>
 
-    // Global Interactive WebRTC State
-    const servers = { iceServers: [{ urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'] }] };
-    let peerConnection = null;
-    let localStream = null;
-    let remoteStream = null;
-    let myCallId = null;
+    <div id="feedback-modal" class="modal-popup hidden">
+        <div class="modal-content">
+            <h2 style="text-align:center; margin-bottom:10px;"><i class="fas fa-heart" style="color:var(--error)"></i> App Feedback</h2>
+            <div class="feedback-smiley-display" id="feedback-emoji-face">😐</div>
+            <div style="text-align: center; font-weight: 700; color: var(--text-main); font-size: 1.1rem;" id="feedback-score-rating">Rating: 2.5 / 5.0</div>
+            <div style="text-align: center; font-size: 0.85rem; color: var(--primary); font-weight: 600; min-height:20px; margin-top:4px;" id="feedback-text-reaction">Mundane experience.</div>
+            <input type="range" min="0.5" max="5" step="0.5" value="2.5" class="stars-range-input" id="feedback-range-slider" oninput="calculateFeedbackDynamicStates(this.value)">
+            <div class="input-group">
+                <label>Describe your thoughts or suggestions</label>
+                <textarea id="feedback-description-box" rows="4" placeholder="What can we build or optimize next?..."></textarea>
+            </div>
+            <div style="display:flex; gap:10px; margin-top:15px;">
+                <button class="btn" style="background:#cbd5e1; flex:1;" onclick="closeModal('feedback-modal')">Close</button>
+                <button class="btn btn-primary" style="flex:1;" onclick="submitSystemFeedbackReport()">Submit Feedback</button>
+            </div>
+        </div>
+    </div>
 
-    // --- Authentication Bindings ---
-    btnGoogle.onclick = () => signInWithPopup(auth, googleProvider).catch(err => alert("Google Error: " + err.message));
-    btnSignup.onclick = () => createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value).catch(err => alert(err.message));
-    btnLogin.onclick = () => signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value).catch(err => alert(err.message));
-    btnLogout.onclick = () => signOut(auth);
+    <div id="join-workspace-modal" class="modal-popup hidden">
+        <div class="modal-content">
+            <h2 style="margin-bottom: 20px;">Join a Workspace</h2>
+            <div class="input-group">
+                <label>6-Digit Workspace Code</label>
+                <input type="text" id="ws-join-code" placeholder="123456" maxlength="6">
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="btn" style="background: #cbd5e1; flex: 1;" onclick="closeModal('join-workspace-modal')">Cancel</button>
+                <button class="btn btn-primary" style="flex: 1;" onclick="joinWorkspaceSubmit()">Join</button>
+            </div>
+        </div>
+    </div>
 
-    onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        authSection.classList.add('hidden');
-        appSection.classList.remove('hidden');
-        userEmailDisplay.innerText = user.email || `UID: ${user.uid.substring(0,8)}`;
-        await secureAssignUniqueCallId(user.uid);
-        listenForIncomingCalls();
-      } else {
-        authSection.classList.remove('hidden');
-        appSection.classList.add('hidden');
-        if (myCallId) off(ref(db, `calls/${myCallId}`));
-        cleanupCall();
-      }
-    });
+    <div id="add-friends-modal" class="modal-popup hidden">
+        <div class="modal-content">
+            <h2 style="margin-bottom: 20px;">Add a Friend</h2>
+            <div class="input-group">
+                <label>Friend's 6-Digit Code or UID</label>
+                <input type="text" id="friend-search-input" placeholder="Enter friend code or UID">
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="btn" style="background: #cbd5e1; flex: 1;" onclick="closeModal('add-friends-modal')">Cancel</button>
+                <button class="btn btn-primary" style="flex: 1;" onclick="sendFriendRequestSubmit()">Send Request</button>
+            </div>
+        </div>
+    </div>
 
-    // --- Atomic Uniqueness Verification & ID Generator ---
-    async function secureAssignUniqueCallId(uid) {
-      myCallIdDisplay.innerText = "Synchronizing...";
-      const userRef = ref(db, `users/${uid}`);
-      const snapshot = await get(userRef);
-      
-      if (snapshot.exists()) {
-        myCallId = snapshot.val().callId;
-      } else {
-        let isUniqueClaimed = false;
-        while (!isUniqueClaimed) {
-          const generatedCode = Math.floor(100000 + Math.random() * 900000).toString();
-          const targetGlobalIdRef = ref(db, `ids/${generatedCode}`);
+    <div id="camera-choice-modal" class="modal-popup hidden">
+        <div class="modal-content" style="text-align: center;">
+            <h2 style="margin-bottom: 20px;"><i class="fas fa-camera"></i> Select Camera Output</h2>
+            <p style="color: var(--text-muted); margin-bottom: 20px;">Choose whether you want to capture an image snapshot or record a video file stream.</p>
+            <div style="display: flex; gap: 15px;">
+                <button class="btn btn-primary" style="flex: 1; background: var(--success);" onclick="triggerCameraCaptureSubsystem('image')"><i class="fas fa-image"></i> Take Image</button>
+                <button class="btn btn-primary" style="flex: 1; background: var(--warning);" onclick="triggerCameraCaptureSubsystem('video')"><i class="fas fa-video"></i> Record Video</button>
+            </div>
+            <button class="btn" style="background: #cbd5e1; width: 100%; margin-top: 15px;" onclick="closeModal('camera-choice-modal')">Cancel</button>
+        </div>
+    </div>
 
-          // Atomic execution prevents collision races
-          const result = await runTransaction(targetGlobalIdRef, (currentData) => {
-            if (currentData === null) {
-              return uid; // Path is empty, secure registration by saving user ID
-            }
-            return; // Abort transaction if collision happens
-          });
+    <div id="camera-view-modal" class="modal-popup hidden">
+        <div class="modal-content" style="max-width: 550px; width: 95%;">
+            <h2 style="margin-bottom: 15px;" id="camera-view-title">Camera Capture View</h2>
+            <div style="background: #000; border-radius: 8px; overflow: hidden; position: relative; width: 100%; height: 320px; display: flex; align-items: center; justify-content: center;">
+                <video id="hardware-camera-stream-preview" autoplay playsinline muted style="width:100%; height:100%; object-fit: cover;"></video>
+                <video id="hardware-camera-playback-preview" controls class="hidden" style="width:100%; height:100%; object-fit: cover;"></video>
+                <img id="hardware-camera-image-preview" class="hidden" style="width:100%; height:100%; object-fit: contain;">
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
+                <button id="camera-capture-trigger-btn" class="btn btn-primary" style="flex: 1;" onclick="executeCameraCaptureAction()">Capture</button>
+                <button id="camera-done-trigger-btn" class="btn" style="flex: 1; background: var(--success); color: white;" disabled onclick="finalizeCameraUploadOperation()">Done</button>
+                <button class="btn" style="background: #cbd5e1; flex: 1;" onclick="closeCameraViewportSubsystem()">Cancel</button>
+            </div>
+        </div>
+    </div>
 
-          if (result.committed) {
-            myCallId = generatedCode;
-            isUniqueClaimed = true;
-            await update(userRef, { callId: myCallId });
-          }
-        }
-      }
-      myCallIdDisplay.innerText = myCallId;
-    }
-
-    // --- Hardware Access Pipeline ---
-    async function setupMedia() {
-      const videoConstraints = enableVideoCheckbox.checked;
-      try {
-        localStream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
-          video: videoConstraints
-        });
-        localVideo.srcObject = localStream;
+    <div id="auth-section" class="auth-container fade-in">
+        <h2 id="auth-title" style="margin-bottom: 30px; text-align: center;">Welcome Back</h2>
         
-        remoteStream = new MediaStream();
-        remoteVideo.srcObject = remoteStream;
-
-        peerConnection = new RTCPeerConnection(servers);
+        <div class="input-group">
+            <label>Email Address</label>
+            <input type="email" id="email" placeholder="name@domain.com">
+        </div>
+        <div class="input-group">
+            <label>Password</label>
+            <input type="password" id="password" placeholder="••••••••">
+        </div>
         
-        localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-        peerConnection.ontrack = (event) => {
-          event.streams[0].getTracks().forEach(track => remoteStream.addTrack(track));
+        <button id="auth-btn" class="btn btn-primary" onclick="handleAuth()">Sign In</button>
+        
+        <p style="text-align: center; margin: 10px 0; font-size: 0.8rem; color: var(--error); font-style: italic;">
+            * Email & password authentication is completely experimental. Google Sign-In is highly recommended for stability and speed.
+        </p>
+
+        <button class="btn" style="background: #fff; border: 1px solid #cbd5e1; color: #475569; width: 100%; margin-top: 10px;" onclick="signInWithGoogle()">
+            <i class="fab fa-google" style="color: #ea4335;"></i> Continue with Google
+        </button>
+
+        <div style="text-align: center; margin-top: 15px;">
+            <a href="#" onclick="handleForgotPassword()" id="forgot-link" style="color: var(--text-muted); text-decoration: none; font-size: 0.9rem;">Forgot Password?</a>
+        </div>
+        
+        <div style="background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; border-radius: 8px; padding: 10px; margin-top: 15px; font-size: 0.75rem; text-align: center; line-height: 1.4;">
+            <i class="fas fa-desktop" style="margin-right: 4px;"></i> <strong>Note:</strong> A personal computer (PC) is recommended for utilizing the platform layout natively. While fully compatible with mobile screens, this layout optimization is tailored for desktop view alignment.
+        </div>
+
+        <p style="text-align: center; margin-top: 20px; color: var(--text-muted);">
+            <span id="auth-toggle-text">New to the app?</span> 
+            <a href="#" id="auth-toggle-link" onclick="toggleAuthMode()" style="color: var(--primary); text-decoration: none; font-weight: 600;">Sign up now.</a>
+        </p>
+    </div>
+
+    <div id="verify-section" class="auth-container hidden" style="text-align: center;">
+        <i class="fas fa-envelope-open-text" style="font-size: 3rem; color: var(--primary); margin-bottom: 20px;"></i>
+        <h2>Verify your email</h2>
+        <p style="color: var(--text-muted); margin: 20px 0;">We've sent a link to your email. Please verify your account and refresh or check in again.</p>
+        <button class="btn btn-primary" onclick="window.location.reload()">I've Verified</button>
+    </div>
+
+    <div id="friends-dashboard" class="dashboard hidden fade-in">
+        <h1 id="friends-panel-title">Friends Management</h1>
+        <div class="workspace-layout">
+            <div class="collab-area" style="flex:1;">
+                <div class="app-card">
+                    <h3 style="margin-bottom:15px;" id="friends-list-header">List of Connections</h3>
+                    <div id="friends-render-box" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px;"></div>
+                </div>
+            </div>
+            <div class="side-panel" id="dm-panel" style="flex:1; display:none;">
+                <h3 id="dm-target-name">Direct Messaging</h3>
+                <div id="dm-chat-box" style="height: 300px; overflow-y:auto; border: 1px solid #e2e8f0; padding:10px; border-radius:8px; background:#f8fafc;"></div>
+                <div id="dm-chat-typing-indicator" class="typing-indicator"></div>
+                <div style="display:flex; gap:8px; align-items: center; flex-wrap: wrap;">
+                    <input type="text" id="dm-input" placeholder="Type private message..." style="flex: 1;" oninput="handleDmChatInputInteraction(this)">
+                    <button class="btn" id="dm-mic-btn" style="padding:12px 16px; font-size:0.9rem; background:#edf2f7; width: auto;" onclick="togglePrivateDmAudioRecordingSubsystem()"><i class="fas fa-microphone"></i></button>
+                    <button class="btn btn-primary" style="width:auto;" onclick="sendPrivateMessage()"><i class="fas fa-paper-plane"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="workspace-dashboard" class="dashboard hidden fade-in">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 20px;">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <img id="active-ws-avatar" src="" style="width: 50px; height: 50px; border-radius: 10px; object-fit: cover; background: #cbd5e1;" class="hidden">
+                <div>
+                    <h1 id="active-ws-title">No Active Workspace</h1>
+                    <p id="active-ws-code-banner" style="color: var(--text-muted); font-size: 0.9rem; font-weight: 600;"></p>
+                </div>
+            </div>
+            <div style="display:flex; gap:10px; flex-wrap: wrap;">
+                <button class="btn hidden" id="modify-ws-btn" style="background:#f1f5f9; color:#334155;" onclick="openWorkspaceModificationDrawer()"><i class="fas fa-sliders-h"></i> Configure Team</button>
+                <button class="btn" style="background:#e0f2fe; color:#0369a1;" onclick="copyInviteLink()"><i class="fas fa-link"></i> Invite Link</button>
+                <button class="btn" style="background:#f3e8ff; color:#6b21a8;" onclick="showQrCodeModal()"><i class="fas fa-qrcode"></i> QR Invite</button>
+                <button class="btn" style="background:#fff7ed; color:#c2410c;" onclick="openReportWorkspaceModal()"><i class="fas fa-flag"></i> Report Team</button>
+                <button class="btn" id="leave-ws-btn" style="background:#fee2e2; color:#b91c1c;" onclick="leaveCurrentWorkspace()"><i class="fas fa-sign-out-alt"></i> Leave Team</button>
+                <button class="btn hidden" id="delete-ws-btn" style="background:#b91c1c; color:#fff;" onclick="deleteCurrentWorkspace()"><i class="fas fa-trash-alt"></i> Destroy Team</button>
+            </div>
+        </div>
+
+        <div class="workspace-layout">
+            <div class="collab-area">
+                <div class="app-card id-join-requests-panel hidden" id="ws-join-requests-card">
+                    <h3 style="margin-bottom:12px;"><i class="fas fa-user-plus" style="color: var(--warning);"></i> User Request to join workspace</h3>
+                    <div id="ws-join-requests-list" class="tasks-box-container"></div>
+                </div>
+
+                <div class="app-card">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                        <h3><i class="fas fa-tasks" style="color:var(--primary)"></i> Realtime Collaborative Tasks</h3>
+                        <div style="display:flex; gap:6px; max-width:300px; width:100%;">
+                            <input type="text" id="task-creation-input" placeholder="What needs to be done?..." style="padding:6px 12px; font-size:0.85rem;">
+                            <button class="btn btn-primary" style="width:auto; padding:6px 12px; font-size:0.85rem;" onclick="submitNewWorkspaceTask()"><i class="fas fa-plus"></i></button>
+                        </div>
+                    </div>
+                    <div id="workspace-tasks-list-box" class="tasks-box-container"></div>
+                </div>
+
+                <div class="app-card">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                        <h3><i class="fas fa-edit"></i> Collaborative Text Nodes</h3>
+                        <button class="btn btn-primary" style="width:auto; padding:6px 12px; font-size:0.85rem;" onclick="addSharedTextBox()"><i class="fas fa-plus"></i> Add Box</button>
+                    </div>
+                    <div id="shared-textboxes-container"></div>
+                </div>
+            </div>
+
+            <div class="side-panel">
+                <div>
+                    <h3 style="margin-bottom:8px;"><i class="fas fa-terminal text-muted"></i> System Activity Log</h3>
+                    <div class="activity-log-frame" id="workspace-activity-log-box"></div>
+                </div>
+
+                <div>
+                    <h3 style="margin-bottom:10px;"><i class="fas fa-users-cog"></i> Workspace Directory</h3>
+                    <input type="text" id="member-search" placeholder="Filter members by name..." style="padding:8px; margin-bottom:10px;" oninput="renderMemberList()">
+                    <div id="member-list-box" class="item-list" style="max-height: 200px;"></div>
+                </div>
+
+                <div>
+                    <h3 style="margin-bottom:10px;"><i class="fas fa-comments"></i> Team Communications</h3>
+                    <div class="chat-container">
+                        <div class="chat-messages" id="chat-messages-frame"></div>
+                        <div class="typing-indicator" id="chat-typing-frame"></div>
+                        <div class="chat-input-area">
+                            <div id="mention-suggestions" class="mention-dropdown hidden"></div>
+                            <input type="text" id="chat-input-field" placeholder="Type text, use @ to mention teammates..." oninput="handleChatInputInteraction(this)">
+                            
+                            <div class="chat-controls">
+                                <label style="cursor:pointer;" title="Upload File (<70MB)"><i class="fas fa-paperclip" style="font-size:1.2rem; color:var(--text-muted);"></i><input type="file" id="chat-file-input" style="display:none;" onchange="uploadChatMediaFile(this)"></label>
+                                <button class="btn" style="padding:4px 8px; font-size:0.75rem; background:#edf2f7; border: none; cursor: pointer; color: var(--text-main);" onclick="openCameraChoiceModal()"><i class="fas fa-camera"></i> Camera</button>
+                                <button class="btn" id="chat-mic-btn" style="padding:4px 8px; font-size:0.75rem; background:#edf2f7;" onclick="toggleAudioRecordingSubsystem()"><i class="fas fa-microphone"></i> Record</button>
+                                <button class="btn" style="padding:4px 8px; font-size:0.75rem; background:#edf2f7;" onclick="openPollCreationDialog()"><i class="fas fa-poll-h"></i> Poll</button>
+                                <button class="btn btn-primary" style="width:auto; padding:6px 16px; margin-left:auto;" onclick="sendTeamChatMessage()"><i class="fas fa-paper-plane"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="qr-modal" class="modal-popup hidden">
+        <div class="modal-content" style="text-align:center;">
+            <h2 style="margin-bottom:15px;">Workspace QR Invite</h2>
+            <div id="qrcode-render-target" style="display:flex; justify-content:center; margin: 20px 0;"></div>
+            <button class="btn btn-primary" onclick="closeModal('qr-modal')">Done</button>
+        </div>
+    </div>
+
+    <div id="poll-modal" class="modal-popup hidden">
+        <div class="modal-content">
+            <h2 style="margin-bottom:15px;">Create Workspace Poll</h2>
+            <div class="input-group">
+                <label>Question</label>
+                <input type="text" id="poll-query" placeholder="What should we work on next?">
+            </div>
+            <div class="input-group">
+                <label>Options (Comma Separated, Max 10)</label>
+                <input type="text" id="poll-options-csv" placeholder="Option A, Option B, Option C">
+            </div>
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button class="btn" style="background:#cbd5e1; flex:1;" onclick="closeModal('poll-modal')">Cancel</button>
+                <button class="btn btn-primary" style="flex:1;" onclick="submitPollToChat()">Launch Poll</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="report-ws-modal" class="modal-popup hidden">
+        <div class="modal-content">
+            <h2 style="margin-bottom:15px;"><i class="fas fa-flag" style="color:var(--error);"></i> Report Workspace</h2>
+            <div class="input-group">
+                <label>Reason for Report</label>
+                <select id="report-ws-reason">
+                    <option value="Abusive Content">Abusive or Harassing Content</option>
+                    <option value="Spam / Malicious Activity">Spam or Malicious Operations</option>
+                    <option value="Intellectual Property Breach">Intellectual Property Violation</option>
+                    <option value="Other Policy Violation">Other Policy Breaches</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label>Detailed Description</label>
+                <textarea id="report-ws-details" rows="3" placeholder="Provide additional tracking contexts..."></textarea>
+            </div>
+            <div class="input-group">
+                <label>Upload Supporting Evidence (Image / Video)</label>
+                <input type="file" id="report-ws-file" accept="image/*,video/*">
+            </div>
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button class="btn" style="background:#cbd5e1; flex:1;" onclick="closeModal('report-ws-modal')">Cancel</button>
+                <button class="btn btn-primary" style="background:var(--error); flex:1;" onclick="submitWorkspaceReportForm()">Submit Report</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, sendEmailVerification, sendPasswordResetEmail, signOut, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getDatabase, ref, set, push, onValue, update, remove, runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        // Specified Configuration Profiles
+        const firebaseConfig = {
+          apiKey: "AIzaSyCzV75WoXRkbX9Davc_3Vr853Gvej1WEww",
+          authDomain: "serverfluxionary.firebaseapp.com",
+          databaseURL: "https://serverfluxionary-default-rtdb.asia-southeast1.firebasedatabase.app",
+          projectId: "serverfluxionary",
+          storageBucket: "serverfluxionary.firebasestorage.app",
+          messagingSenderId: "693102090542",
+          appId: "1:693102090542:web:59298f926dd0257ce682bf"
         };
-      } catch (e) {
-        alert("Media initiation failed: Ensure microphone/camera permissions are granted.");
-        throw e;
-      }
-    }
 
-    // --- Signaling & Connection Logic ---
-    btnStartCall.onclick = async () => {
-      const destinationId = remoteIdInput.value.trim();
-      if (!destinationId || destinationId === myCallId) return alert("Please specify a valid tracking signature.");
+        const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/dufbzl68g/auto/upload";
+        const CLOUDINARY_PRESET = "ml_default";
 
-      await setupMedia();
-      const callRef = ref(db, `calls/${destinationId}`);
+        // Initializing Systems
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+        const googleProvider = new GoogleAuthProvider();
 
-      peerConnection.onicecandidate = (event) => {
-        if (event.candidate) {
-          update(ref(db, `calls/${destinationId}/callerCandidates`), { [Date.now()]: event.candidate.toJSON() });
-        }
-      };
-
-      const localOffer = await peerConnection.createOffer();
-      await peerConnection.setLocalDescription(localOffer);
-
-      await set(callRef, {
-        offer: { sdp: localOffer.sdp, type: localOffer.type, callerId: myCallId }
-      });
-
-      onValue(callRef, async (snapshot) => {
-        const payload = snapshot.val();
-        if (payload?.answer && !peerConnection.currentRemoteDescription) {
-          await peerConnection.setRemoteDescription(new RTCSessionDescription(payload.answer));
-        }
-        if (payload?.calleeCandidates) {
-          Object.values(payload.calleeCandidates).forEach(cand => {
-            peerConnection.addIceCandidate(new RTCIceCandidate(cand)).catch(() => {});
-          });
-        }
-      });
-    };
-
-    function listenForIncomingCalls() {
-      onValue(ref(db, `calls/${myCallId}`), async (snapshot) => {
-        const payload = snapshot.val();
+        // Memory Registries & State Trackers
+        let isLoginMode = true;
+        let currentUserProfile = null;
+        let activeWorkspaceId = null;
+        let workspaceMetadataCache = {};
+        let activeDMPartnerUid = null;
+        let currentChatSlowModeActive = false;
+        let currentChatLastSentTimestamp = 0;
+        let localInputStateLockout = {};
         
-        if (payload?.offer && !peerConnection) {
-          if (confirm(`Incoming high-priority connection from peer: ${payload.offer.callerId}. Accept handshake?`)) {
-            await setupMedia();
+        // Native Hardware Audio Stream Registry Controllers
+        let globalMediaRecorderInstance = null;
+        let accumulatedAudioChunksBuffer = [];
 
-            peerConnection.onicecandidate = (event) => {
-              if (event.candidate) {
-                update(ref(db, `calls/${myCallId}/calleeCandidates`), { [Date.now()]: event.candidate.toJSON() });
-              }
+        // Camera Tracking System Memory Variables
+        let cameraCaptureMode = "image"; 
+        let cameraLiveHardwareStream = null;
+        let cameraMediaRecorderInstance = null;
+        let cameraRecordedChunksBuffer = [];
+        let cameraCapturedBlobResult = null;
+
+        // Private DM Audio Recording Trackers
+        let dmMediaRecorderInstance = null;
+        let dmAccumulatedAudioChunksBuffer = [];
+
+        // --- Initialization Hooks & Route Routing Hooks ---
+        window.addEventListener('DOMContentLoaded', () => {
+            parseIncomingDeepLinks();
+            calculateFeedbackDynamicStates(2.5);
+            monitorNetworkOnlineStatus();
+        });
+
+        // Online Status Subsystem Monitor
+        function monitorNetworkOnlineStatus() {
+            const banner = document.getElementById('offline-banner');
+            const updateStatus = () => {
+                if(navigator.onLine) {
+                    banner.style.display = "none";
+                } else {
+                    banner.style.display = "block";
+                }
             };
+            window.addEventListener('online', updateStatus);
+            window.addEventListener('offline', updateStatus);
+            updateStatus();
+        }
 
-            await peerConnection.setRemoteDescription(new RTCSessionDescription(payload.offer));
-            const localAnswer = await peerConnection.createAnswer();
-            await peerConnection.setLocalDescription(localAnswer);
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                if (!user.emailVerified && user.providerData[0].providerId === 'password') {
+                    showSection('verify-section');
+                } else {
+                    document.getElementById('nav-user').classList.remove('hidden');
+                    // Sync individual identity record
+                    await monitorProfileRecordState(user);
+                }
+            } else {
+                showSection('auth-section');
+                document.getElementById('nav-user').classList.add('hidden');
+            }
+        });
 
-            await update(ref(db, `calls/${myCallId}`), {
-              answer: { type: localAnswer.type, sdp: localAnswer.sdp }
+        // --- Core Profile Profile Synchronization Engines ---
+        async function monitorProfileRecordState(user) {
+            const userProfileRef = ref(db, `users/${user.uid}`);
+            onValue(userProfileRef, (snapshot) => {
+                const profile = snapshot.val();
+                if (!profile || !profile.displayName) {
+                    // Force compulsory onboarding modal layer
+                    currentUserProfile = profile;
+                    document.getElementById('profile-drawer-title').innerText = "Complete Your Profile";
+                    document.getElementById('profile-drawer').classList.remove('hidden');
+                } else {
+                    currentUserProfile = profile;
+                    document.getElementById('user-display-name').innerText = profile.displayName;
+                    document.getElementById('my-friend-code').innerText = profile.friendCode || "------";
+                    document.getElementById('my-uid').innerText = user.uid;
+                    
+                    // Check if user is currently looking at the login page/auth view or verification view, routing them into the internal app UI view safely
+                    const currentActiveSectionId = document.querySelector('.dashboard:not(.hidden), .auth-container:not(.hidden)')?.id;
+                    if (!currentActiveSectionId || currentActiveSectionId === 'auth-section' || currentActiveSectionId === 'verify-section') {
+                        if (activeWorkspaceId) {
+                            showSection('workspace-dashboard');
+                        } else {
+                            showSection('friends-dashboard');
+                            showFriendsSection();
+                        }
+                    }
+
+                    // Activate Background Realtime Sync Threads
+                    listenToWorkspacesCatalog();
+                    listenToMentionSystemNotifications();
+                }
+            });
+        }
+
+        window.saveProfileData = async () => {
+            const displayName = document.getElementById('prof-display-name').value.trim();
+            const bio = document.getElementById('prof-bio').value.trim();
+            const picFile = document.getElementById('prof-pic-file').files[0];
+
+            if (!displayName) return showToast("Display name is required", "error");
+
+            let uploadedUrl = currentUserProfile?.profilePic || "";
+            if (picFile) {
+                showToast("Uploading profile image...", "success");
+                uploadedUrl = await uploadMediaToCloudinary(picFile);
+            }
+
+            const generatedFriendCode = currentUserProfile?.friendCode || Math.floor(100000 + Math.random() * 900000).toString();
+
+            await update(ref(db, `users/${auth.currentUser.uid}`), {
+                displayName: displayName,
+                bio: bio,
+                profilePic: uploadedUrl,
+                friendCode: generatedFriendCode,
+                uid: auth.currentUser.uid
             });
 
-            if (payload.callerCandidates) {
-              Object.values(payload.callerCandidates).forEach(cand => {
-                peerConnection.addIceCandidate(new RTCIceCandidate(cand)).catch(() => {});
-              });
-            }
-          } else {
-            await set(ref(db, `calls/${myCallId}`), null);
-          }
-        }
-      });
-    }
+            document.getElementById('profile-drawer').classList.add('hidden');
+            showToast("Profile information updated.");
 
-    function cleanupCall() {
-      if (localStream) localStream.getTracks().forEach(t => t.stop());
-      if (peerConnection) peerConnection.close();
-      peerConnection = null;
-      localVideo.srcObject = null;
-      remoteVideo.srcObject = null;
-    }
-  </script>
+            // Directly guide authenticated profiles straight into app view layouts instead of lingering in context rooms layers
+            if (activeWorkspaceId) {
+                showSection('workspace-dashboard');
+            } else {
+                showSection('friends-dashboard');
+                showFriendsSection();
+            }
+        };
+
+        window.openProfileEditDrawer = () => {
+            if(!currentUserProfile) return;
+            document.getElementById('prof-display-name').value = currentUserProfile.displayName || "";
+            document.getElementById('prof-bio').value = currentUserProfile.bio || "";
+            document.getElementById('prof-preview').src = currentUserProfile.profilePic || "";
+            document.getElementById('friend-code-display-area').classList.remove('hidden');
+            document.getElementById('profile-drawer-title').innerText = "Edit Settings Profile";
+            document.getElementById('profile-drawer').classList.remove('hidden');
+            toggleSidebar();
+        };
+
+        // --- Workspace Logic Engines ---
+        window.createNewWorkspaceSubmit = async () => {
+            const name = document.getElementById('ws-create-name').value.trim();
+            const picFile = document.getElementById('ws-create-file').files[0];
+            if (!name) return showToast("Workspace name is required", "error");
+
+            let picUrl = "";
+            if(picFile) {
+                picUrl = await uploadMediaToCloudinary(picFile);
+            }
+
+            const targetWsId = push(ref(db, 'workspaces')).key;
+            const targetWsCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+            const initWorkspaceObject = {
+                id: targetWsId,
+                name: name,
+                photo: picUrl,
+                code: targetWsCode,
+                creator: auth.currentUser.uid,
+                membersCount: 1,
+                requireApproval: false
+            };
+
+            await set(ref(db, `workspaces/${targetWsId}/meta`), initWorkspaceObject);
+            await set(ref(db, `workspaces/${targetWsId}/members/${auth.currentUser.uid}`), {
+                uid: auth.currentUser.uid,
+                role: 'creator',
+                displayName: currentUserProfile.displayName,
+                profilePic: currentUserProfile.profilePic
+            });
+
+            // Map index pointer inside internal individual profile roster
+            await set(ref(db, `users/${auth.currentUser.uid}/workspaces/${targetWsId}`), true);
+            
+            // Dispatch Initial Activity Log Trace Entry Record
+            await appendLogTraceEvent(targetWsId, "created the workspace instance metadata structure configuration profiles.");
+
+            closeModal('create-workspace-modal');
+            showToast("Workspace instantiated successfully.");
+            switchActiveWorkspaceContext(targetWsId);
+        };
+
+        window.joinWorkspaceSubmit = async () => {
+            const codeInput = document.getElementById('ws-join-code').value.trim();
+            if (codeInput.length !== 6) return showToast("Enter valid 6-digit code", "error");
+
+            // Lookup index table matching code references
+            onValue(ref(db, 'workspaces'), async (snapshot) => {
+                let matchFound = false;
+                snapshot.forEach((child) => {
+                    const ws = child.val();
+                    if(ws.meta && ws.meta.code === codeInput) {
+                        matchFound = true;
+                        if(ws.meta.requireApproval) {
+                            executeJoinRequestSequence(child.key, ws);
+                        } else {
+                            executeJoinSequence(child.key, ws);
+                        }
+                    }
+                });
+                if(!matchFound) showToast("Workspace not found", "error");
+            }, { onlyOnce: true });
+        };
+
+        async function executeJoinRequestSequence(wsId, wsPayload) {
+            if (wsPayload.members && wsPayload.members[auth.currentUser.uid]) {
+                showToast("You are already a member of this workspace!", "error");
+                closeModal('join-workspace-modal');
+                switchActiveWorkspaceContext(wsId);
+                return;
+            }
+            if (wsPayload.join_requests && wsPayload.join_requests[auth.currentUser.uid]) {
+                showToast("Your request to join this workspace is already pending review.", "warning");
+                closeModal('join-workspace-modal');
+                return;
+            }
+
+            await set(ref(db, `workspaces/${wsId}/join_requests/${auth.currentUser.uid}`), {
+                uid: auth.currentUser.uid,
+                displayName: currentUserProfile.displayName,
+                profilePic: currentUserProfile.profilePic,
+                timestamp: Date.now()
+            });
+
+            closeModal('join-workspace-modal');
+            showToast("Join request sent. Admin approval required.", "success");
+        }
+
+        async function executeJoinSequence(wsId, wsPayload) {
+            // Pre-flight structural membership tests
+            if (wsPayload.members && wsPayload.members[auth.currentUser.uid]) {
+                showToast("You are already a member of this workspace!", "error");
+                closeModal('join-workspace-modal');
+                switchActiveWorkspaceContext(wsId);
+                return;
+            }
+
+            const currentCount = wsPayload.meta.membersCount || 0;
+            if (currentCount >= 300) return showToast("Workspace has filled max limit capacity (300 members).", "error");
+
+            // Transactionally increment and append data nodes
+            await update(ref(db, `workspaces/${wsId}/meta`), { membersCount: currentCount + 1 });
+            await set(ref(db, `workspaces/${wsId}/members/${auth.currentUser.uid}`), {
+                uid: auth.currentUser.uid,
+                role: 'member',
+                displayName: currentUserProfile.displayName,
+                profilePic: currentUserProfile.profilePic
+            });
+            await set(ref(db, `users/${auth.currentUser.uid}/workspaces/${wsId}`), true);
+
+            await appendLogTraceEvent(wsId, "joined the workspace team index roster directory.");
+
+            closeModal('join-workspace-modal');
+            showToast("Welcome aboard! Joined workspace.");
+            switchActiveWorkspaceContext(wsId);
+        }
+
+        function listenToWorkspacesCatalog() {
+            onValue(ref(db, `users/${auth.currentUser.uid}/workspaces`), (snapshot) => {
+                const listContainer = document.getElementById('my-workspaces-list');
+                listContainer.innerHTML = '';
+                
+                if(!snapshot.exists()) return;
+                
+                snapshot.forEach((child) => {
+                    const wsId = child.key;
+                    onValue(ref(db, `workspaces/${wsId}/meta`), (metaSnap) => {
+                        const meta = metaSnap.val();
+                        if(!meta) return;
+                        
+                        workspaceMetadataCache[wsId] = meta;
+                        let itemDiv = document.getElementById(`ws-item-${wsId}`);
+                        if(!itemDiv) {
+                            itemDiv = document.createElement('div');
+                            itemDiv.id = `ws-item-${wsId}`;
+                            itemDiv.className = "list-item";
+                            listContainer.appendChild(itemDiv);
+                        }
+                        itemDiv.onclick = () => switchActiveWorkspaceContext(wsId);
+                        itemDiv.innerHTML = `<span><i class="fas fa-folder"></i> ${meta.name}</span> <small style="color:var(--text-muted); font-size:0.7rem;">#${meta.code}</small>`;
+                    });
+                });
+            });
+        }
+
+        // --- Dashboard Frame Controller / Router Navigation Matrix ---
+        function switchActiveWorkspaceContext(wsId) {
+            activeWorkspaceId = wsId;
+            showSection('workspace-dashboard');
+            
+            // Highlight list selection state
+            document.querySelectorAll('#my-workspaces-list .list-item').forEach(el => el.classList.remove('active'));
+            const activeListItem = document.getElementById(`ws-item-${wsId}`);
+            if(activeListItem) activeListItem.classList.add('active');
+
+            // Synchronize active tracking hooks
+            const meta = workspaceMetadataCache[wsId];
+            if(meta) {
+                document.getElementById('active-ws-title').innerText = meta.name;
+                document.getElementById('active-ws-code-banner').innerText = `Workspace PIN: ${meta.code}`;
+                
+                const av = document.getElementById('active-ws-avatar');
+                if(meta.photo) {
+                    av.src = meta.photo;
+                    av.classList.remove('hidden');
+                } else {
+                    av.classList.add('hidden');
+                }
+            }
+
+            // Realtime listeners binding matrices
+            bindWorkspaceTextBoxesStream();
+            bindWorkspaceChatStreams();
+            listenWorkspaceMembersDirectory();
+            bindWorkspaceTasksChannelSyncStream();
+            bindWorkspaceSystemActivityLogPipeline();
+            bindWorkspaceJoinRequestsPipeline();
+        }
+
+        function listenWorkspaceMembersDirectory() {
+            onValue(ref(db, `workspaces/${activeWorkspaceId}/members`), (snapshot) => {
+                window.activeWorkspaceMembers = [];
+                snapshot.forEach(c => { window.activeWorkspaceMembers.push(c.val()); });
+                renderMemberList();
+                evaluatePermissionMatrices();
+            });
+        }
+
+        function evaluatePermissionMatrices() {
+            const myMemberRecord = window.activeWorkspaceMembers.find(m => m.uid === auth.currentUser.uid);
+            const deleteBtn = document.getElementById('delete-ws-btn');
+            const modifyBtn = document.getElementById('modify-ws-btn');
+            const isManager = myMemberRecord && (myMemberRecord.role === 'creator' || myMemberRecord.role === 'admin');
+            
+            if(isManager) {
+                deleteBtn.classList.remove('hidden');
+                modifyBtn.classList.remove('hidden');
+            } else {
+                deleteBtn.classList.add('hidden');
+                modifyBtn.classList.add('hidden');
+            }
+        }
+
+        function bindWorkspaceJoinRequestsPipeline() {
+            const requestsCard = document.getElementById('ws-join-requests-card');
+            const requestsContainer = document.getElementById('ws-join-requests-list');
+
+            onValue(ref(db, `workspaces/${activeWorkspaceId}/join_requests`), (snapshot) => {
+                const myMemberRecord = window.activeWorkspaceMembers?.find(m => m.uid === auth.currentUser.uid);
+                const isManager = myMemberRecord && (myMemberRecord.role === 'creator' || myMemberRecord.role === 'admin');
+
+                if(!snapshot.exists() || !isManager) {
+                    requestsCard.classList.add('hidden');
+                    requestsContainer.innerHTML = '';
+                    return;
+                }
+
+                requestsCard.classList.remove('hidden');
+                requestsContainer.innerHTML = '';
+
+                snapshot.forEach(child => {
+                    const req = child.val();
+                    const row = document.createElement('div');
+                    row.className = "task-row-item";
+                    row.innerHTML = `
+                        <div style="display:flex; align-items:center; gap:10px; flex:1;">
+                            <img src="${req.profilePic || ''}" style="width:28px; height:28px; border-radius:50%; object-fit:cover; background:#cbd5e1;">
+                            <span style="font-size:0.9rem; font-weight:600; color:var(--text-main);">${req.displayName}</span>
+                        </div>
+                        <div style="display:flex; gap:6px;">
+                            <button class="btn btn-primary" style="padding:4px 10px; font-size:0.8rem; background:var(--success); width:auto;" onclick="processWorkspaceJoinRequest('${req.uid}', true, '${req.displayName.replace(/'/g, "\\'")}', '${req.profilePic || ''}')">Approve</button>
+                            <button class="btn" style="padding:4px 10px; font-size:0.8rem; background:var(--error); color:white; width:auto;" onclick="processWorkspaceJoinRequest('${req.uid}', false, '${req.displayName.replace(/'/g, "\\'")}')">Deny</button>
+                        </div>
+                    `;
+                    requestsContainer.appendChild(row);
+                });
+            });
+        }
+
+        window.processWorkspaceJoinRequest = async (targetUid, isApproved, displayName, profilePic) => {
+            if(isApproved) {
+                const meta = workspaceMetadataCache[activeWorkspaceId];
+                const currentCount = meta?.membersCount || 0;
+                
+                await update(ref(db, `workspaces/${activeWorkspaceId}/meta`), { membersCount: currentCount + 1 });
+                await set(ref(db, `workspaces/${activeWorkspaceId}/members/${targetUid}`), {
+                    uid: targetUid,
+                    role: 'member',
+                    displayName: displayName,
+                    profilePic: profilePic
+                });
+                await set(ref(db, `users/${targetUid}/workspaces/${activeWorkspaceId}`), true);
+                await appendLogTraceEvent(activeWorkspaceId, `approved membership request for ${displayName}.`);
+                showToast(`Approved ${displayName} to join.`);
+            } else {
+                showToast(`Denied request from ${displayName}.`);
+            }
+            await remove(ref(db, `workspaces/${activeWorkspaceId}/join_requests/${targetUid}`));
+        };
+
+        window.renderMemberList = () => {
+            const query = document.getElementById('member-search').value.toLowerCase();
+            const box = document.getElementById('member-list-box');
+            box.innerHTML = '';
+
+            if(!window.activeWorkspaceMembers) return;
+
+            // Extract context identity role rules for validation
+            const meRecord = window.activeWorkspaceMembers.find(m => m.uid === auth.currentUser.uid);
+            const isAuthorizedUploader = meRecord && (meRecord.role === 'creator' || meRecord.role === 'admin');
+
+            window.activeWorkspaceMembers.forEach(member => {
+                if(query && !member.displayName.toLowerCase().includes(query)) return;
+
+                const row = document.createElement('div');
+                row.className = "list-item";
+                
+                let actionControls = '';
+                if(isAuthorizedUploader && member.uid !== auth.currentUser.uid) {
+                    if(member.role === 'member') {
+                        actionControls += `<button class="btn" style="padding:2px 6px; font-size:0.7rem; background:#dbeafe; color:#1e40af;" onclick="changeMemberRole('${member.uid}', 'admin')">Promote</button>`;
+                    } else if(member.role === 'admin') {
+                        actionControls += `<button class="btn" style="padding:2px 6px; font-size:0.7rem; background:#fef3c7; color:#92400e;" onclick="changeMemberRole('${member.uid}', 'member')">Demote</button>`;
+                    }
+                    actionControls += `<button class="btn" style="padding:2px 6px; font-size:0.7rem; background:#fee2e2; color:#991b1b;" onclick="removeUserFromWorkspace('${member.uid}')"><i class="fas fa-user-times"></i></button>`;
+                }
+
+                row.innerHTML = `
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <img src="${member.profilePic || ''}" style="width:24px; height:24px; border-radius:50%; object-fit:cover; background:#cbd5e1;">
+                        <div>
+                            <strong>${member.displayName}</strong> 
+                            <span class="status-badge ${member.role === 'creator' || member.role === 'admin' ? 'badge-admin' : 'badge-member'}">${member.role}</span>
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:4px; align-items:center;">${actionControls}</div>
+                `;
+                box.appendChild(row);
+            });
+        };
+
+        window.changeMemberRole = async (targetUid, newRole) => {
+            await update(ref(db, `workspaces/${activeWorkspaceId}/members/${targetUid}`), { role: newRole });
+            await appendLogTraceEvent(activeWorkspaceId, `altered membership permissions profile of UID:${targetUid} to role ${newRole}.`);
+            showToast("Authorization configuration permissions modified.");
+        };
+
+        window.removeUserFromWorkspace = async (targetUid) => {
+            if(!confirm("Evict member from current workspace instance?")) return;
+            await remove(ref(db, `workspaces/${activeWorkspaceId}/members/${targetUid}`));
+            await remove(ref(db, `users/${targetUid}/workspaces/${activeWorkspaceId}`));
+            await appendLogTraceEvent(activeWorkspaceId, `evicted member target user reference UID:${targetUid} out of team structures.`);
+            showToast("Member successfully removed.");
+        };
+
+        window.leaveCurrentWorkspace = async () => {
+            if(!confirm("Are you sure you want to exit this workspace?")) return;
+            await appendLogTraceEvent(activeWorkspaceId, "voluntarily departed and removed themselves from the directory roster.");
+            
+            await remove(ref(db, `workspaces/${activeWorkspaceId}/members/${auth.currentUser.uid}`));
+            await remove(ref(db, `users/${auth.currentUser.uid}/workspaces/${activeWorkspaceId}`));
+            
+            // Decement structural metadata cache records counters
+            const meta = workspaceMetadataCache[activeWorkspaceId];
+            if(meta) {
+                await update(ref(db, `workspaces/${activeWorkspaceId}/meta`), { membersCount: Math.max(0, (meta.membersCount || 1) - 1) });
+            }
+
+            showToast("Left workspace safely.");
+            window.location.reload();
+        };
+
+        window.deleteCurrentWorkspace = async () => {
+            const myMemberRecord = window.activeWorkspaceMembers?.find(m => m.uid === auth.currentUser.uid);
+            const isAuthorized = myMemberRecord && (myMemberRecord.role === 'creator' || myMemberRecord.role === 'admin');
+            if(!isAuthorized) {
+                return showToast("Access Denied: Only workspace creators or administrators can trigger team destruction routines.", "error");
+            }
+
+            if(!confirm("CRITICAL WARNING: This action permanently deletes the workspace and all matching records. Continue?")) return;
+            
+            // Purge indexes from active members profiles records dynamically
+            window.activeWorkspaceMembers.forEach(async (m) => {
+                await remove(ref(db, `users/${m.uid}/workspaces/${activeWorkspaceId}`));
+            });
+
+            await remove(ref(db, `workspaces/${activeWorkspaceId}`));
+            showToast("Workspace wiped successfully.");
+            window.location.reload();
+        };
+
+        // --- Workspace Configuration Management Panel Extensions ---
+        window.openWorkspaceModificationDrawer = () => {
+            const currentMetadata = workspaceMetadataCache[activeWorkspaceId];
+            if(!currentMetadata) return;
+            
+            document.getElementById('ws-edit-name').value = currentMetadata.name || "";
+            document.getElementById('ws-edit-url-fallback').value = currentMetadata.photo || "";
+            document.getElementById('ws-require-approval').checked = currentMetadata.requireApproval || false;
+            document.getElementById('ws-edit-file').value = null;
+            document.getElementById('edit-workspace-modal').classList.remove('hidden');
+        };
+
+        window.submitWorkspaceModificationDetails = async () => {
+            const targetWorkspaceLookupId = activeWorkspaceId;
+            const updatedTitleString = document.getElementById('ws-edit-name').value.trim();
+            const directUrlValue = document.getElementById('ws-edit-url-fallback').value.trim();
+            const requireApprovalState = document.getElementById('ws-require-approval').checked;
+            const fileAttachmentNode = document.getElementById('ws-edit-file').files[0];
+
+            if(!updatedTitleString) return showToast("Workspace contextual mapping names cannot be left blank", "error");
+
+            let targetOutputUrl = directUrlValue || workspaceMetadataCache[targetWorkspaceLookupId]?.photo || "";
+            
+            if(fileAttachmentNode) {
+                showToast("Uploading workspace decoration layer artifact...", "success");
+                targetOutputUrl = await uploadMediaToCloudinary(fileAttachmentNode);
+            }
+
+            const updatesMap = {
+                name: updatedTitleString,
+                photo: targetOutputUrl,
+                requireApproval: requireApprovalState
+            };
+
+            await update(ref(db, `workspaces/${targetWorkspaceLookupId}/meta`), updatesMap);
+            await appendLogTraceEvent(targetWorkspaceLookupId, `reconfigured workspace meta variables. Changed label profile to: "${updatedTitleString}"`);
+            
+            closeModal('edit-workspace-modal');
+            showToast("Workspace updated successfully.");
+        };
+
+        // --- Realtime Document Multi-Textbox Synchronization Subsystem ---
+        window.addSharedTextBox = async () => {
+            if(!activeWorkspaceId) return;
+            const boxRef = push(ref(db, `workspaces/${activeWorkspaceId}/textboxes`));
+            await set(boxRef, {
+                id: boxRef.key,
+                content: "",
+                lastUpdatedBy: currentUserProfile.displayName,
+                isImportant: false
+            });
+            await appendLogTraceEvent(activeWorkspaceId, `appended a new shared text container node [ID: ${boxRef.key}].`);
+        };
+
+        function bindWorkspaceTextBoxesStream() {
+            onValue(ref(db, `workspaces/${activeWorkspaceId}/textboxes`), (snapshot) => {
+                const container = document.getElementById('shared-textboxes-container');
+                
+                if(!snapshot.exists()) {
+                    container.innerHTML = '';
+                    return;
+                }
+
+                // Extract roles permissions contexts natively
+                const meRecord = window.activeWorkspaceMembers?.find(m => m.uid === auth.currentUser.uid);
+                const isManagementRole = meRecord && (meRecord.role === 'creator' || meRecord.role === 'admin');
+
+                snapshot.forEach(child => {
+                    const box = child.val();
+                    let el = document.getElementById(`box-item-container-${box.id}`);
+                    
+                    if(!el) {
+                        el = document.createElement('div');
+                        el.id = `box-item-container-${box.id}`;
+                        container.appendChild(el);
+                    }
+                    
+                    el.className = `textbox-item ${box.isImportant ? 'important' : ''}`;
+                    
+                    let actionControls = '';
+                    actionControls += `<button class="btn btn-primary text-save-trigger" style="width:auto; padding:6px 14px; font-size:0.8rem; background:var(--success);" onclick="syncTextBoxValue('${box.id}')"><i class="fas fa-save"></i> Save Changes</button>`;
+
+                    if(box.isImportant) {
+                        actionControls += `<button class="textbox-action-btn" style="color:var(--text-muted); margin-left:12px;" onclick="toggleTextBoxImportance('${box.id}', false)"><i class="fas fa-bookmark"></i> Remove Mark</button>`;
+                    } else {
+                        actionControls += `<button class="textbox-action-btn" style="color:var(--warning); margin-left:12px;" onclick="toggleTextBoxImportance('${box.id}', true)"><i class="far fa-bookmark"></i> Mark Important</button>`;
+                    }
+
+                    if(isManagementRole) {
+                        actionControls += `<button class="textbox-action-btn" style="color:var(--error); margin-left:12px;" onclick="deleteSharedTextBox('${box.id}')"><i class="fas fa-trash"></i> Delete</button>`;
+                    }
+                    
+                    el.innerHTML = `
+                        <div class="textbox-header">
+                            <span>Active Node ID: ${box.id}</span>
+                            <span style="font-weight:600; color:var(--primary);">Last Edited By: ${box.lastUpdatedBy}</span>
+                        </div>
+                        <textarea class="textarea-node" id="input-box-${box.id}" placeholder="Type text here..." inputmode="text" clickable="true" style="-webkit-user-select:text; user-select:text;"></textarea>
+                        <div class="textbox-actions">${actionControls}</div>
+                    `;
+
+                    const textareaNode = el.querySelector('.textarea-node');
+                    
+                    // Allow simple local updates while user types without rewriting state from db dynamically
+                    textareaNode.oninput = (event) => {
+                        localInputStateLockout[box.id] = true;
+                    };
+
+                    // Only load remote values if user is not actively interacting or focusing local inputs
+                    if (localInputStateLockout[box.id]) {
+                        delete localInputStateLockout[box.id];
+                    } else {
+                        if (document.activeElement && document.activeElement.id === `input-box-${box.id}`) {
+                            // Retain dynamic cursor location alignment natively
+                            const cachedStartPos = textareaNode.selectionStart;
+                            const cachedEndPos = textareaNode.selectionEnd;
+                            textareaNode.value = box.content || '';
+                            textareaNode.setSelectionRange(cachedStartPos, cachedEndPos);
+                        } else {
+                            textareaNode.value = box.content || '';
+                        }
+                    }
+                });
+
+                // Clear missing text nodes
+                Array.from(container.children).forEach(childNode => {
+                    const extractedId = childNode.id.replace('box-item-container-', '');
+                    if(!snapshot.hasChild(extractedId)) {
+                        childNode.remove();
+                    }
+                });
+            });
+        }
+
+        window.syncTextBoxValue = async (boxId) => {
+            const currentTextAreaField = document.getElementById(`input-box-${boxId}`);
+            if(!currentTextAreaField) return;
+
+            const textStringValue = currentTextAreaField.value;
+
+            await update(ref(db, `workspaces/${activeWorkspaceId}/textboxes/${boxId}`), {
+                content: textStringValue,
+                lastUpdatedBy: currentUserProfile.displayName
+            });
+            showToast("Text box content saved successfully.");
+        };
+
+        window.toggleTextBoxImportance = async (boxId, statusState) => {
+            await update(ref(db, `workspaces/${activeWorkspaceId}/textboxes/${boxId}`), { isImportant: statusState });
+            await appendLogTraceEvent(activeWorkspaceId, `modified textual context status structural alerts tags of node block ${boxId} to state importance: ${statusState}`);
+        };
+
+        window.deleteSharedTextBox = async (boxId) => {
+            await remove(ref(db, `workspaces/${activeWorkspaceId}/textboxes/${boxId}`));
+            await appendLogTraceEvent(activeWorkspaceId, `removed text block node container registry instance references [ID: ${boxId}].`);
+        };
+
+        // --- Realtime Task Management System Core Implementation ---
+        window.submitNewWorkspaceTask = async () => {
+            const inputField = document.getElementById('task-creation-input');
+            const taskLabel = inputField.value.trim();
+            if(!taskLabel) return showToast("Task labels cannot remain blank references", "error");
+
+            const taskPushRef = push(ref(db, `workspaces/${activeWorkspaceId}/tasks`));
+            const taskObjectPayload = {
+                id: taskPushRef.key,
+                label: taskLabel,
+                completed: false,
+                instantiatedBy: currentUserProfile.displayName,
+                timestamp: Date.now()
+            };
+
+            await set(taskPushRef, taskObjectPayload);
+            await appendLogTraceEvent(activeWorkspaceId, `assigned a new collaborative platform objective task item: "${taskLabel}"`);
+            
+            inputField.value = '';
+            showToast("Shared task item created.");
+        };
+
+        function bindWorkspaceTasksChannelSyncStream() {
+            onValue(ref(db, `workspaces/${activeWorkspaceId}/tasks`), (snapshot) => {
+                const targetTaskBoxContainer = document.getElementById('workspace-tasks-list-box');
+                targetTaskBoxContainer.innerHTML = '';
+
+                if(!snapshot.exists()) {
+                    targetTaskBoxContainer.innerHTML = `<p style="color:var(--text-muted); font-size:0.85rem; padding:10px; text-align:center;">No pending collaborative workspace objectives registered.</p>`;
+                    return;
+                }
+
+                snapshot.forEach(childSnapshot => {
+                    const taskItem = childSnapshot.val();
+                    const taskRowElement = document.createElement('div');
+                    taskRowElement.className = `task-row-item ${taskItem.completed ? 'completed' : ''}`;
+                    
+                    const checkedPropertyAttributeString = taskItem.completed ? 'checked' : '';
+                    
+                    taskRowElement.innerHTML = `
+                        <div style="display:flex; align-items:center; gap:10px; flex:1;">
+                            <input type="checkbox" style="width:18px; height:18px; cursor:pointer;" ${checkedPropertyAttributeString} onchange="toggleSharedTaskStateCompletion('${taskItem.id}', this.checked)">
+                            <span style="font-size:0.9rem; font-weight:500; color:var(--text-main); word-break:break-all;">${taskItem.label}</span>
+                        </div>
+                        <small style="color:var(--text-muted); font-size:0.7rem; margin-left:10px; font-style:italic;">By: ${taskItem.instantiatedBy}</small>
+                        <i class="fas fa-trash-alt" style="color:var(--error); margin-left:14px; cursor:pointer; font-size:0.85rem;" onclick="purgeSharedTaskInstanceItem('${taskItem.id}', '${taskItem.label.replace(/'/g, "\\'")}')"></i>
+                    `;
+                    targetTaskBoxContainer.appendChild(taskRowElement);
+                });
+            });
+        }
+
+        window.toggleSharedTaskStateCompletion = async (taskId, checkboxValueBooleanState) => {
+            await update(ref(db, `workspaces/${activeWorkspaceId}/tasks/${taskId}`), { completed: checkboxValueBooleanState });
+            const actionLabelString = checkboxValueBooleanState ? "completed objective target task" : "reopened structural task node";
+            await updateWorkspaceTaskLogTallyStateTrace(taskId, actionLabelString);
+        };
+
+        async function updateWorkspaceTaskLogTallyStateTrace(taskId, statementVerbPhrase) {
+            onValue(ref(db, `workspaces/${activeWorkspaceId}/tasks/${taskId}`), async (snap) => {
+                const data = snap.val();
+                if(data) {
+                    await appendLogTraceEvent(activeWorkspaceId, `${statementVerbPhrase}: "${data.label}"`);
+                }
+            }, { onlyOnce: true });
+        }
+
+        window.purgeSharedTaskInstanceItem = async (taskId, rawTaskLabelStringEscaped) => {
+            if(!confirm("Purge selected shared milestone task entry item?")) return;
+            await remove(ref(db, `workspaces/${activeWorkspaceId}/tasks/${taskId}`));
+            await appendLogTraceEvent(activeWorkspaceId, `purged shared workspace task entry item: "${rawTaskLabelStringEscaped}"`);
+            showToast("Task destroyed safely.");
+        };
+
+        // --- Live Activity Logging Stream Matrices Implementation ---
+        async function appendLogTraceEvent(targetWsId, textStatementMessagePayload) {
+            const auditTraceRef = push(ref(db, `workspaces/${targetWsId}/activity_log`));
+            const traceLogEntryInstance = {
+                username: currentUserProfile?.displayName || auth.currentUser?.email || "Unknown Profile",
+                action: textStatementMessagePayload,
+                timestamp: Date.now()
+            };
+            await set(auditTraceRef, traceLogEntryInstance);
+        }
+
+        function bindWorkspaceSystemActivityLogPipeline() {
+            onValue(ref(db, `workspaces/${activeWorkspaceId}/activity_log`), (snapshot) => {
+                const targetLogViewConsoleContainer = document.getElementById('workspace-activity-log-box');
+                targetLogViewConsoleContainer.innerHTML = '';
+
+                if(!snapshot.exists()) {
+                    targetLogViewConsoleContainer.innerHTML = `<div class="activity-log-line"><span class="act-time">--:--</span> Workspace activity tracking pipeline ready.</div>`;
+                    return;
+                }
+
+                let activityLinesStackArray = [];
+                snapshot.forEach(childSnap => {
+                    const auditLogObject = childSnap.val();
+                    const humanReadableTimestampString = new Date(auditLogObject.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                    
+                    const dynamicLogHtmlRowTemplate = `
+                        <div class="activity-log-line">
+                            <span class="act-time">[${humanReadableTimestampString}]</span>
+                            <span class="act-user">${auditLogObject.username}</span> 
+                            <span>${auditLogObject.action}</span>
+                        </div>
+                    `;
+                    activityLinesStackArray.push(dynamicLogHtmlRowTemplate);
+                });
+
+                // Display logs with the latest at the bottom
+                targetLogViewConsoleContainer.innerHTML = activityLinesStackArray.join('');
+                targetLogViewConsoleContainer.scrollTop = targetLogViewConsoleContainer.scrollHeight;
+            });
+        }
+
+        // --- Live Communications Chat System Matrix (With Auto Mention Lookup) ---
+        function bindWorkspaceChatStreams() {
+            // Unbind any legacy listening loops natively
+            const chatMessagesQueryRef = ref(db, `workspaces/${activeWorkspaceId}/chat/messages`);
+            
+            // Monitor traffic loads limits checks metrics bounds rules
+            checkWorkspaceChatVolumeThresholds();
+
+            onValue(chatMessagesQueryRef, (snapshot) => {
+                const messageBox = document.getElementById('chat-messages-frame');
+                messageBox.innerHTML = '';
+                
+                if(!snapshot.exists()) return;
+
+                snapshot.forEach(child => {
+                    const msg = child.val();
+                    const row = document.createElement('div');
+                    row.className = "message-row fade-in";
+
+                    let inlinePayload = '';
+                    if(msg.type === 'text') inlinePayload = `<p>${parseTextMentionHighlights(msg.text)}</p>`;
+                    if(msg.type === 'media') {
+                        if(msg.mime?.includes('image')) inlinePayload = `<img src="${msg.fileUrl}" style="max-width:100%; border-radius:8px; max-height:200px; object-fit:cover;">`;
+                        else if(msg.mime?.includes('video')) inlinePayload = `<video src="${msg.fileUrl}" controls style="max-width:100%; border-radius:8px;"></video>`;
+                        else if(msg.mime?.includes('audio')) inlinePayload = `<audio src="${msg.fileUrl}" controls style="max-width:100%"></audio>`;
+                        else inlinePayload = `<a href="${msg.fileUrl}" target="_blank" class="btn" style="background:#f1f5f9; font-size:0.8rem;"><i class="fas fa-file-download"></i> Download Shared Attachment</a>`;
+                    }
+                    if(msg.type === 'poll') {
+                        inlinePayload = renderPollComponentUIHtml(msg.pollId, msg.pollData, child.key);
+                    }
+
+                    row.innerHTML = `
+                        <img src="${msg.senderPic || ''}" class="msg-avatar" alt="Avatar">
+                        <div class="msg-bubble">
+                            <div class="msg-username">${msg.senderName}</div>
+                            ${inlinePayload}
+                        </div>
+                    `;
+                    messageBox.appendChild(row);
+                });
+                messageBox.scrollTop = messageBox.scrollHeight;
+            });
+
+            // Bind typing monitoring channel pipelines
+            onValue(ref(db, `workspaces/${activeWorkspaceId}/chat/typing`), (snap) => {
+                const indicatorsBox = document.getElementById('chat-typing-frame');
+                indicatorsBox.innerHTML = '';
+                if(!snap.exists()) return;
+                
+                let activeTypers = [];
+                snap.forEach(c => { if(c.key !== auth.currentUser.uid && c.val()) activeTypers.push(c.val()); });
+                if(activeTypers.length > 0) {
+                    indicatorsBox.innerText = `${activeTypers.join(', ')} typing...`;
+                }
+            });
+        }
+
+        function parseTextMentionHighlights(text) {
+            // Highlighting text nodes mapping rules
+            return text.replace(/@\[([^\]]+)\]/g, '<span style="color:var(--primary); font-weight:700; background:#dbeafe; padding:2px 4px; border-radius:4px;">@$1</span>');
+        }
+
+        async function checkWorkspaceChatVolumeThresholds() {
+            const todayKey = new Date().toISOString().split('T')[0];
+            const chatVolumeTrackerRef = ref(db, `workspaces/${activeWorkspaceId}/chat/volume_counters/${todayKey}`);
+            
+            onValue(chatVolumeTrackerRef, (snap) => {
+                const count = snap.val() || 0;
+                if (count >= 500) {
+                    currentChatSlowModeActive = true;
+                    showToast("Workspace traffic limit exceeded! System entered 5-second chat cooldown throttling slow mode.", "error");
+                } else {
+                    currentChatSlowModeActive = false;
+                }
+            });
+        }
+
+        window.handleChatInputInteraction = async (inputEl) => {
+            const val = inputEl.value;
+            const cursorPosition = inputEl.selectionStart;
+            const typingIndicatorRef = ref(db, `workspaces/${activeWorkspaceId}/chat/typing/${auth.currentUser.uid}`);
+            
+            if(val.length > 0) {
+                await set(typingIndicatorRef, currentUserProfile.displayName);
+            } else {
+                await remove(typingIndicatorRef);
+            }
+
+            // Mentions triggers checks processing logic rules bounds
+            const substringBeforeCursor = val.substring(0, cursorPosition);
+            const lastAtSymbolIndex = substringBeforeCursor.lastIndexOf('@');
+
+            if(lastAtSymbolIndex !== -1 && lastAtSymbolIndex === substringBeforeCursor.length - 1) {
+                // Show auto complete matrix suggestions nodes matching profiles
+                const dropdown = document.getElementById('mention-suggestions');
+                dropdown.innerHTML = '';
+                dropdown.classList.remove('hidden');
+
+                window.activeWorkspaceMembers.forEach(m => {
+                    const rowItem = document.createElement('div');
+                    rowItem.className = "mention-item";
+                    rowItem.innerHTML = `<img src="${m.profilePic || ''}" style="width:20px; height:20px; border-radius:50%; object-fit:cover;"> <span>${m.displayName}</span>`;
+                    rowItem.onclick = () => injectSelectedMentionToken(lastAtSymbolIndex, m);
+                    dropdown.appendChild(rowItem);
+                });
+            } else {
+                document.getElementById('mention-suggestions').classList.add('hidden');
+            }
+        };
+
+        function injectSelectedMentionToken(atIndex, memberObj) {
+            const field = document.getElementById('chat-input-field');
+            const originalVal = field.value;
+            
+            // Format structurally tracking identifier tags to separate profiles parsing parameters mapping arrays references logic lines rules matches
+            const updatedVal = originalVal.substring(0, atIndex) + `@[${memberObj.displayName}] ` + originalVal.substring(atIndex + 1);
+            
+            field.value = updatedVal;
+            document.getElementById('mention-suggestions').classList.add('hidden');
+            field.focus();
+        }
+
+        window.sendTeamChatMessage = async () => {
+            const inputField = document.getElementById('chat-input-field');
+            let rawText = inputField.value.trim();
+            if(!rawText) return;
+
+            // Slow mode tracking barriers checking calculations logic loops paths rules
+            if (currentChatSlowModeActive) {
+                const now = Date.now();
+                if (now - currentChatLastSentTimestamp < 5000) {
+                    return showToast("Throttling constraint active. Please wait 5 seconds before dispatching.", "error");
+                }
+                currentChatLastSentTimestamp = now;
+            }
+
+            // Scan text string matching mentions formats to fire transactional notifications endpoints pipelines
+            const patternMatches = [...rawText.matchAll(/@\[([^\]]+)\]/g)];
+            patternMatches.forEach(match => {
+                const mentionedName = match[1];
+                const foundMemberObj = window.activeWorkspaceMembers.find(m => m.displayName === mentionedName);
+                if(foundMemberObj) {
+                    dispatchExternalMentionNotificationEvent(foundMemberObj.uid);
+                }
+            });
+
+            const todayKey = new Date().toISOString().split('T')[0];
+            const chatLogPushEndpointRef = push(ref(db, `workspaces/${activeWorkspaceId}/chat/messages`));
+            
+            await set(chatLogPushEndpointRef, {
+                type: 'text',
+                text: rawText,
+                senderUid: auth.currentUser.uid,
+                senderName: currentUserProfile.displayName,
+                senderPic: currentUserProfile.profilePic,
+                timestamp: Date.now()
+            });
+
+            // Increment traffic logging aggregates numbers records
+            const volumeCounterRef = ref(db, `workspaces/${activeWorkspaceId}/chat/volume_counters/${todayKey}`);
+            await runTransaction(volumeCounterRef, (currentVal) => {
+                return (currentVal || 0) + 1;
+            });
+
+            inputField.value = '';
+            await remove(ref(db, `workspaces/${activeWorkspaceId}/chat/typing/${auth.currentUser.uid}`));
+        };
+
+        async function dispatchExternalMentionNotificationEvent(targetUserUid) {
+            const alertPushEndpointRef = push(ref(db, `users/${targetUserUid}/notifications/mentions`));
+            const meta = workspaceMetadataCache[activeWorkspaceId];
+            await set(alertPushEndpointRef, {
+                senderName: currentUserProfile.displayName,
+                workspaceName: meta?.name || "Shared Hub",
+                timestamp: Date.now()
+            });
+        }
+
+        function listenToMentionSystemNotifications() {
+            const pipelineRef = ref(db, `users/${auth.currentUser.uid}/notifications/mentions`);
+            onValue(pipelineRef, (snapshot) => {
+                if(!snapshot.exists()) return;
+                snapshot.forEach(child => {
+                    const alert = child.val();
+                    showMentionAlertToastNotification(alert.senderName, alert.workspaceName);
+                    // Consume message directly off queues lines immediately
+                    remove(ref(db, `users/${auth.currentUser.uid}/notifications/mentions/${child.key}`));
+                });
+            });
+        }
+
+        // --- Camera Features Realtime Subsystem Core Logic ---
+        window.openCameraChoiceModal = () => {
+            if (!activeWorkspaceId) return showToast("Activate workspace frame focus first.", "error");
+            document.getElementById('camera-choice-modal').classList.remove('hidden');
+        };
+
+        window.triggerCameraCaptureSubsystem = async (mode) => {
+            cameraCaptureMode = mode;
+            closeModal('camera-choice-modal');
+
+            document.getElementById('camera-view-title').innerText = mode === "image" ? "Camera Capture Snapshot" : "Camera Record Video Stream";
+            document.getElementById('camera-capture-trigger-btn').innerText = mode === "image" ? "Capture Snapshot" : "Start Video Recording";
+            
+            // Reset modal states preview elements layouts nodes
+            document.getElementById('hardware-camera-stream-preview').classList.remove('hidden');
+            document.getElementById('hardware-camera-playback-preview').classList.add('hidden');
+            document.getElementById('hardware-camera-image-preview').classList.add('hidden');
+            document.getElementById('camera-done-trigger-btn').disabled = true;
+
+            cameraCapturedBlobResult = null;
+            cameraRecordedChunksBuffer = [];
+
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                return showToast("Browser framework configuration blocks camera hardware integrations.", "error");
+            }
+
+            try {
+                showToast("Requesting camera system configuration permission access...", "success");
+                cameraLiveHardwareStream = await navigator.mediaDevices.getUserMedia({
+                    video: true,
+                    audio: mode === "video"
+                });
+                
+                const liveVideoContainer = document.getElementById('hardware-camera-stream-preview');
+                liveVideoContainer.srcObject = cameraLiveHardwareStream;
+                document.getElementById('camera-view-modal').classList.remove('hidden');
+            } catch (err) {
+                showToast(`Camera capture framework permission denied: ${err.message}`, "error");
+            }
+        };
+
+        window.executeCameraCaptureAction = () => {
+            if (cameraCaptureMode === "image") {
+                const liveVideoContainer = document.getElementById('hardware-camera-stream-preview');
+                const canvasNodeElement = document.createElement('canvas');
+                canvasNodeElement.width = liveVideoContainer.videoWidth || 640;
+                canvasNodeElement.height = liveVideoContainer.videoHeight || 480;
+                
+                const canvasContext2d = canvasNodeElement.getContext('2d');
+                canvasContext2d.drawImage(liveVideoContainer, 0, 0, canvasNodeElement.width, canvasNodeElement.height);
+                
+                canvasNodeElement.toBlob((blob) => {
+                    cameraCapturedBlobResult = blob;
+                    
+                    const imagePreviewContainer = document.getElementById('hardware-camera-image-preview');
+                    imagePreviewContainer.src = URL.createObjectURL(blob);
+                    
+                    liveVideoContainer.classList.add('hidden');
+                    imagePreviewContainer.classList.remove('hidden');
+                    
+                    document.getElementById('camera-done-trigger-btn').disabled = false;
+                    showToast("Snapshot taken successfully. Click Done to submit layout.", "success");
+                }, 'image/jpeg');
+
+            } else if (cameraCaptureMode === "video") {
+                const triggerButton = document.getElementById('camera-capture-trigger-btn');
+                
+                if (cameraMediaRecorderInstance && cameraMediaRecorderInstance.state === "recording") {
+                    cameraMediaRecorderInstance.stop();
+                    triggerButton.innerText = "Start Video Recording";
+                    return;
+                }
+
+                cameraRecordedChunksBuffer = [];
+                cameraMediaRecorderInstance = new MediaRecorder(cameraLiveHardwareStream);
+                
+                cameraMediaRecorderInstance.ondataavailable = (event) => {
+                    if (event.data && event.data.size > 0) {
+                        cameraRecordedChunksBuffer.push(event.data);
+                    }
+                };
+
+                cameraMediaRecorderInstance.onstop = () => {
+                    cameraCapturedBlobResult = new Blob(cameraRecordedChunksBuffer, { type: 'video/webm' });
+                    
+                    const playbackContainer = document.getElementById('hardware-camera-playback-preview');
+                    playbackContainer.src = URL.createObjectURL(cameraCapturedBlobResult);
+                    
+                    document.getElementById('hardware-camera-stream-preview').classList.add('hidden');
+                    playbackContainer.classList.remove('hidden');
+                    
+                    document.getElementById('camera-done-trigger-btn').disabled = false;
+                    showToast("Video recording aggregated successfully.", "success");
+                };
+
+                cameraMediaRecorderInstance.start();
+                triggerButton.innerText = "Stop Recording";
+                showToast("Recording live video track timeline feed elements...", "success");
+            }
+        };
+
+        window.finalizeCameraUploadOperation = async () => {
+            if (!cameraCapturedBlobResult) return;
+            
+            showToast("Streaming camera captured payload frames to repository...", "success");
+            closeCameraViewportSubsystem();
+
+            const fileExtension = cameraCaptureMode === "image" ? "jpg" : "webm";
+            const fileMimeType = cameraCaptureMode === "image" ? "image/jpeg" : "video/webm";
+            const compiledMediaFileObj = new File([cameraCapturedBlobResult], `camera_capture_${Date.now()}.${fileExtension}`, { type: fileMimeType });
+
+            try {
+                const remoteUrlCloudResult = await uploadMediaToCloudinary(compiledMediaFileObj);
+                
+                const chatLogPushEndpointRef = push(ref(db, `workspaces/${activeWorkspaceId}/chat/messages`));
+                await set(chatLogPushEndpointRef, {
+                    type: 'media',
+                    fileUrl: remoteUrlCloudResult,
+                    mime: fileMimeType,
+                    senderUid: auth.currentUser.uid,
+                    senderName: currentUserProfile.displayName,
+                    senderPic: currentUserProfile.profilePic,
+                    timestamp: Date.now()
+                });
+
+                await appendLogTraceEvent(activeWorkspaceId, `uploaded a live camera captured ${cameraCaptureMode} asset inside chat streams logs.`);
+                showToast("Camera content synchronized distributed successfully.");
+            } catch (err) {
+                showToast(`Camera payload distribution upload collapse failure: ${err.message}`, "error");
+            }
+        };
+
+        window.closeCameraViewportSubsystem = () => {
+            if (cameraLiveHardwareStream) {
+                cameraLiveHardwareStream.getTracks().forEach(track => track.stop());
+                cameraLiveHardwareStream = null;
+            }
+            cameraMediaRecorderInstance = null;
+            closeModal('camera-view-modal');
+        };
+
+        // --- Cloudinary Integration Engine Layer Implementation ---
+        async function uploadMediaToCloudinary(fileObject) {
+            const formPayload = new FormData();
+            formPayload.append("file", fileObject);
+            formPayload.append("upload_preset", CLOUDINARY_PRESET);
+
+            const httpResponse = await fetch(CLOUDINARY_URL, { method: "POST", body: formPayload });
+            const dataResult = await httpResponse.json();
+            return dataResult.secure_url;
+        }
+
+        window.uploadChatMediaFile = async (inputEl) => {
+            const file = inputEl.files[0];
+            if(!file) return;
+
+            // Maximum bounds lock limit check configurations size cap parameters (70MB)
+            const maximumBytesThreshold = 70 * 1024 * 1024;
+            if(file.size > maximumBytesThreshold) {
+                return showToast("File payload rejected! Max safe transmission profile ceiling allowed is 70MB.", "error");
+            }
+
+            showToast("Streaming media payload bytes to cloud repository...", "success");
+            const cloudUrl = await uploadMediaToCloudinary(file);
+
+            const chatLogPushEndpointRef = push(ref(db, `workspaces/${activeWorkspaceId}/chat/messages`));
+            await set(chatLogPushEndpointRef, {
+                type: 'media',
+                fileUrl: cloudUrl,
+                mime: file.type,
+                senderUid: auth.currentUser.uid,
+                senderName: currentUserProfile.displayName,
+                senderPic: currentUserProfile.profilePic,
+                timestamp: Date.now()
+            });
+            
+            await appendLogTraceEvent(activeWorkspaceId, `uploaded file attachment asset artifact inside chat: ${file.name}`);
+            showToast("Media payload distributed successfully.");
+        };
+
+        // --- Hardware Microphones Voice Captures Pipelines Modules ---
+        window.toggleAudioRecordingSubsystem = async () => {
+            if (!activeWorkspaceId) return showToast("Activate workspace frame focus first.", "error");
+            const micBtnElement = document.getElementById('chat-mic-btn');
+
+            if (globalMediaRecorderInstance && globalMediaRecorderInstance.state === "recording") {
+                // Halt active telemetry stream and trigger save mapping execution loop bounds
+                globalMediaRecorderInstance.stop();
+                micBtnElement.classList.remove('btn-mic-active');
+                micBtnElement.innerHTML = `<i class="fas fa-microphone"></i> Record`;
+                return;
+            }
+
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                return showToast("Browser framework configuration blocks structural mic capture protocols.", "error");
+            }
+
+            try {
+                showToast("Requesting audio system configuration permissions nodes...", "success");
+                const captureHardwareStreamRef = await navigator.mediaDevices.getUserMedia({ audio: true });
+                
+                accumulatedAudioChunksBuffer = [];
+                globalMediaRecorderInstance = new MediaRecorder(captureHardwareStreamRef);
+
+                globalMediaRecorderInstance.ondataavailable = (event) => {
+                    if (event.data && event.data.size > 0) {
+                        accumulatedAudioChunksBuffer.push(event.data);
+                    }
+                };
+
+                globalMediaRecorderInstance.onstop = async () => {
+                    // Turn raw audio chunks array into an encoded blob asset artifact profile mapping
+                    const compositeAudioBlobPayload = new Blob(accumulatedAudioChunksBuffer, { type: 'audio/webm' });
+                    const synthesizedVirtualAudioFileObject = new File([compositeAudioBlobPayload], `voice_note_${Date.now()}.webm`, { type: 'audio/webm' });
+
+                    // Detach tracks off hardware streams safely to yield system locks control
+                    captureHardwareStreamRef.getTracks().forEach(track => track.stop());
+
+                    showToast("Uploading captured voice recording...", "success");
+                    try {
+                        const directCloudinaryAudioUrl = await uploadMediaToCloudinary(synthesizedVirtualAudioFileObject);
+                        
+                        const chatLogPushEndpointRef = push(ref(db, `workspaces/${activeWorkspaceId}/chat/messages`));
+                        await set(chatLogPushEndpointRef, {
+                            type: 'media',
+                            fileUrl: directCloudinaryAudioUrl,
+                            mime: 'audio/webm',
+                            senderUid: auth.currentUser.uid,
+                            senderName: currentUserProfile.displayName,
+                            senderPic: currentUserProfile.profilePic,
+                            timestamp: Date.now()
+                        });
+
+                        await appendLogTraceEvent(activeWorkspaceId, `transmitted an audio voice snippet clip asset inside communication streams.`);
+                        showToast("Voice message distributed.");
+                    } catch (err) {
+                        showToast(`Media repository ingestion crash down failure logic: ${err.message}`, "error");
+                    }
+                };
+
+                globalMediaRecorderInstance.start();
+                micBtnElement.classList.add('btn-mic-active');
+                micBtnElement.innerHTML = `<i class="fas fa-stop"></i> Stop`;
+                showToast("Recording started... Tap Stop button to finalize.", "success");
+
+            } catch (hardwareError) {
+                showToast(`Hardware capture permission denied: ${hardwareError.message}`, "error");
+            }
+        };
+
+        // --- Multi-Option Poll Interaction Processing Models Component Blocks ---
+        window.openPollCreationDialog = () => {
+            if(!activeWorkspaceId) return showToast("Activate workspace frame focus first.", "error");
+            document.getElementById('poll-modal').classList.remove('hidden');
+        };
+
+        window.submitPollToChat = async () => {
+            const questionText = document.getElementById('poll-query').value.trim();
+            const csvOptions = document.getElementById('poll-options-csv').value.trim();
+
+            if(!questionText || !csvOptions) return showToast("Fields missing parameter parameters.", "error");
+            
+            let structuredOptionsArray = csvOptions.split(',').map(o => o.trim()).filter(o => o.length > 0);
+            if(structuredOptionsArray.length > 10) {
+                return showToast("Maximum of 10 validation options allowed structural limits profiles.", "error");
+            }
+
+            const pollUidKey = "poll_" + Math.random().toString(36).substring(7);
+            
+            // Build internal sub-entities array
+            let mappedOptionsObject = {};
+            structuredOptionsArray.forEach((opt, idx) => {
+                mappedOptionsObject["opt_" + idx] = { label: opt, tally: 0 };
+            });
+
+            const chatLogPushEndpointRef = push(ref(db, `workspaces/${activeWorkspaceId}/chat/messages`));
+            await set(chatLogPushEndpointRef, {
+                type: 'poll',
+                pollId: pollUidKey,
+                pollData: {
+                    question: questionText,
+                    options: mappedOptionsObject,
+                    votersTracker: {}
+                },
+                senderUid: auth.currentUser.uid,
+                senderName: currentUserProfile.displayName,
+                senderPic: currentUserProfile.profilePic,
+                timestamp: Date.now()
+            });
+
+            await appendLogTraceEvent(activeWorkspaceId, `launched team voting consensus module poll survey: "${questionText}"`);
+            closeModal('poll-modal');
+        };
+
+        function renderPollComponentUIHtml(pollId, pollData, messageKey) {
+            let optionLinesElements = '';
+            
+            if(pollData.options) {
+                Object.keys(pollData.options).forEach(key => {
+                    const opt = pollData.options[key];
+                    optionLinesElements += `
+                        <div class="poll-option" onclick="castVoteTransaction('${messageKey}', '${key}')">
+                            <span>${opt.label}</span>
+                            <strong>${opt.tally || 0} votes</strong>
+                        </div>
+                    `;
+                });
+            }
+
+            let votersDetailedText = "No votes recorded yet.";
+            if (pollData.votersTracker) {
+                let trackingList = [];
+                Object.keys(pollData.votersTracker).forEach(uid => {
+                    let record = pollData.votersTracker[uid];
+                    let chosenLabel = pollData.options[record.chosenKey]?.label || "Unknown";
+                    trackingList.push(`<strong>${record.voterName}</strong> voted [${chosenLabel}]`);
+                });
+                if (trackingList.length > 0) votersDetailedText = trackingList.join("<br>");
+            }
+
+            return `
+                <div class="poll-box">
+                    <div class="poll-question"><i class="fas fa-chart-bar"></i> ${pollData.question}</div>
+                    <div>${optionLinesElements}</div>
+                    <button class="btn" style="width:100%; font-size:0.75rem; padding:4px 8px; margin-top:8px; background:#e2e8f0;" onclick="togglePollDataViewBlock('${messageKey}')">View poll info</button>
+                    <div class="poll-info-block" id="poll-info-${messageKey}">${votersDetailedText}</div>
+                </div>
+            `;
+        }
+
+        window.togglePollDataViewBlock = (messageKey) => {
+            const block = document.getElementById(`poll-info-${messageKey}`);
+            if (block) {
+                block.style.display = (block.style.display === "block") ? "none" : "block";
+            }
+        };
+
+        window.castVoteTransaction = async (messageKey, chosenOptionKey) => {
+            const singlePollTrackingTargetRef = ref(db, `workspaces/${activeWorkspaceId}/chat/messages/${messageKey}`);
+            
+            runTransaction(singlePollTrackingTargetRef, (currentPollState) => {
+                if (!currentPollState) return currentPollState;
+                if (!currentPollState.pollData) return currentPollState;
+                
+                if (!currentPollState.pollData.votersTracker) {
+                    currentPollState.pollData.votersTracker = {};
+                }
+                
+                // Enforce single-vote constraint per workspace profile UID
+                if (currentPollState.pollData.votersTracker[auth.currentUser.uid]) {
+                    return undefined; // Abort transaction if user has already voted
+                }
+                
+                // Track user choice mapping parameters records
+                currentPollState.pollData.votersTracker[auth.currentUser.uid] = {
+                    voterName: currentUserProfile.displayName,
+                    chosenKey: chosenOptionKey
+                };
+                
+                if (currentPollState.pollData.options && currentPollState.pollData.options[chosenOptionKey]) {
+                    currentPollState.pollData.options[chosenOptionKey].tally = (currentPollState.pollData.options[chosenOptionKey].tally || 0) + 1;
+                }
+                
+                return currentPollState;
+            }).then((result) => {
+                if (!result.committed) {
+                    showToast("Action rejected! You can only cast a vote exactly once per poll system instance.", "error");
+                } else {
+                    showToast("Vote tabulated successfully.");
+                }
+            }).catch(() => {
+                showToast("Transaction anomaly caught inside polling lanes.", "error");
+            });
+        };
+
+        // --- Social Networking & Friends Module Engine System Matrix ---
+        window.sendFriendRequestSubmit = async () => {
+            const inputQueryValue = document.getElementById('friend-search-input').value.trim();
+            if(!inputQueryValue) return;
+
+            // Search database parsing values matching parameters fields structures natively loops paths rules
+            onValue(ref(db, 'users'), async (snapshot) => {
+                let verifiedTargetUid = null;
+                snapshot.forEach(child => {
+                    const profile = child.val();
+                    if (profile.friendCode === inputQueryValue || profile.uid === inputQueryValue) {
+                        verifiedTargetUid = profile.uid;
+                    }
+                });
+
+                if(verifiedTargetUid) {
+                    if(verifiedTargetUid === auth.currentUser.uid) return showToast("Cannot request connection to oneself profiles.", "error");
+                    
+                    await set(ref(db, `users/${verifiedTargetUid}/friend_requests/${auth.currentUser.uid}`), {
+                        senderUid: auth.currentUser.uid,
+                        senderName: currentUserProfile.displayName
+                    });
+                    showToast("Friend Request Sent Successfully", "success");
+                    closeModal('add-friends-modal');
+                } else {
+                    showToast("No user found matching provided token parameter identifier.", "error");
+                }
+            }, { onlyOnce: true });
+        };
+
+        window.showFriendRequestsSection = () => {
+            showSection('friends-dashboard');
+            document.getElementById('friends-panel-title').innerText = "Inbound Connection Requests";
+            
+            onValue(ref(db, `users/${auth.currentUser.uid}/friend_requests`), (snapshot) => {
+                const targetRenderContainerBox = document.getElementById('friends-render-box');
+                targetRenderContainerBox.innerHTML = '';
+                
+                if(!snapshot.exists()) { targetRenderContainerBox.innerHTML = '<p style="color:var(--text-muted); font-size:0.9rem;">No pending inbound requests items.</p>'; return; }
+
+                snapshot.forEach(child => {
+                    const req = child.val();
+                    const card = document.createElement('div');
+                    card.className = "app-card";
+                    card.innerHTML = `
+                        <strong>${req.senderName}</strong>
+                        <p style="font-size:0.75rem; margin-bottom:10px;">Wants to connect profile lines nodes</p>
+                        <div style="display:flex; gap:6px;">
+                            <button class="btn btn-primary" style="padding:6px; font-size:0.8rem;" onclick="acceptFriendshipConnectionLink('${req.senderUid}', '${req.senderName}')">Accept</button>
+                            <button class="btn" style="padding:6px; font-size:0.8rem; background:#fee2e2; color:#b91c1c;" onclick="rejectFriendshipConnectionLink('${req.senderUid}')">Decline</button>
+                        </div>
+                    `;
+                    targetRenderContainerBox.appendChild(card);
+                });
+            });
+        };
+
+        window.acceptFriendshipConnectionLink = async (senderUid, senderName) => {
+            // Establish mutually binding data branches indices
+            await set(ref(db, `users/${auth.currentUser.uid}/friends/${senderUid}`), true);
+            await set(ref(db, `users/${senderUid}/friends/${auth.currentUser.uid}`), true);
+            
+            // Clean out consumed lookup items records paths channels entries rules bounds
+            await remove(ref(db, `users/${auth.currentUser.uid}/friend_requests/${senderUid}`));
+            showToast("Connection handshake finalized successfully.");
+            showFriendsSection();
+        };
+
+        window.rejectFriendshipConnectionLink = async (senderUid) => {
+            await remove(ref(db, `users/${auth.currentUser.uid}/friend_requests/${senderUid}`));
+            showToast("Inbound profile mapping configuration discarded.");
+            showFriendsSection();
+        };
+
+        window.showFriendsSection = () => {
+            showSection('friends-dashboard');
+            document.getElementById('friends-panel-title').innerText = "Active Social Directory Connections";
+            document.getElementById('dm-panel').style.display = "none";
+
+            onValue(ref(db, `users/${auth.currentUser.uid}/friends`), (snapshot) => {
+                const targetRenderContainerBox = document.getElementById('friends-render-box');
+                targetRenderContainerBox.innerHTML = '';
+
+                if(!snapshot.exists()) { targetRenderContainerBox.innerHTML = '<p style="color:var(--text-muted); font-size:0.9rem;">Directory index empty.</p>'; return; }
+
+                snapshot.forEach(child => {
+                    const friendUid = child.key;
+                    onValue(ref(db, `users/${friendUid}`), (profileSnap) => {
+                        const prof = profileSnap.val();
+                        if(!prof) return;
+
+                        // Check mutual block constraints
+                        if(currentUserProfile?.blockedUsers && currentUserProfile.blockedUsers[friendUid]) return;
+
+                        const card = document.createElement('div');
+                        card.className = "app-card";
+                        card.style.cursor = "pointer";
+                        card.onclick = () => instantiateDirectPrivateChatInterface(friendUid, prof.displayName);
+                        card.innerHTML = `
+                            <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+                                <img src="${prof.profilePic || ''}" style="width:40px; height:40px; border-radius:50%; object-fit:cover; background:#cbd5e1;">
+                                <div><strong>${prof.displayName}</strong><br><small style="color:var(--text-muted); font-size:0.75rem;">Click to chat text</small></div>
+                            </div>
+                            <div style="display:flex; gap:4px; flex-wrap:wrap;" onclick="event.stopPropagation();">
+                                <button class="btn" style="padding:4px 8px; font-size:0.7rem; background:#fee2e2; color:#b91c1c;" onclick="unfriendUserEndpoint('${friendUid}')">Unfriend</button>
+                                <button class="btn" style="padding:4px 8px; font-size:0.7rem; background:#cbd5e1; color:#1e293b;" onclick="blockUserEndpoint('${friendUid}')">Block</button>
+                                <button class="btn" style="padding:4px 8px; font-size:0.7rem; background:#fef3c7; color:#d97706;" onclick="reportUserEndpoint('${friendUid}')">Report</button>
+                            </div>
+                        `;
+                        targetRenderContainerBox.appendChild(card);
+                    });
+                });
+            });
+        };
+
+        window.unfriendUserEndpoint = async (targetUid) => {
+            await remove(ref(db, `users/${auth.currentUser.uid}/friends/${targetUid}`));
+            await remove(ref(db, `users/${targetUid}/friends/${auth.currentUser.uid}`));
+            showToast("Connection reference decoupled.");
+        };
+
+        window.blockUserEndpoint = async (targetUid) => {
+            await set(ref(db, `users/${auth.currentUser.uid}/blockedUsers/${targetUid}`), true);
+            showToast("User blocked successfully (No alerts sent out configuration).");
+            showFriendsSection();
+        };
+
+        window.reportUserEndpoint = async (targetUid) => {
+            const reportRef = push(ref(db, 'reports'));
+            await set(reportRef, {
+                reporter: auth.currentUser.uid,
+                offender: targetUid,
+                timestamp: Date.now()
+            });
+            showToast("Safety analysis telemetry profile distributed to operations nodes desk.");
+        };
+
+        function instantiateDirectPrivateChatInterface(friendUid, name) {
+            activeDMPartnerUid = friendUid;
+            document.getElementById('dm-panel').style.display = "flex";
+            document.getElementById('dm-target-name').innerText = `Chat with ${name}`;
+
+            const channelIdTokenKey = auth.currentUser.uid < friendUid ? `${auth.currentUser.uid}_${friendUid}` : `${friendUid}_${auth.currentUser.uid}`;
+            
+            onValue(ref(db, `direct_messages/${channelIdTokenKey}`), (snapshot) => {
+                const box = document.getElementById('dm-chat-box');
+                box.innerHTML = '';
+                if(!snapshot.exists()) return;
+
+                snapshot.forEach(child => {
+                    const msg = child.val();
+                    const line = document.createElement('div');
+                    line.style.marginBottom = "8px";
+                    line.style.fontSize = "0.85rem";
+                    
+                    let inlinePayload = '';
+                    if(msg.type === 'audio') {
+                        inlinePayload = `<audio src="${msg.fileUrl}" controls style="max-width:100%; display:block; margin-top:4px;"></audio>`;
+                    } else {
+                        inlinePayload = `<span>${msg.text}</span>`;
+                    }
+                    
+                    line.innerHTML = `<strong>${msg.senderName}:</strong> ${inlinePayload}`;
+                    box.appendChild(line);
+                });
+                box.scrollTop = box.scrollHeight;
+            });
+
+            // Sync private DM typing feedback channels
+            onValue(ref(db, `direct_messages_typing/${channelIdTokenKey}/${friendUid}`), (typingSnap) => {
+                const typingIndicator = document.getElementById('dm-chat-typing-indicator');
+                if(typingSnap.exists() && typingSnap.val()) {
+                    typingIndicator.innerText = `${name} is typing...`;
+                } else {
+                    typingIndicator.innerText = '';
+                }
+            });
+        }
+
+        window.handleDmChatInputInteraction = async (inputEl) => {
+            if(!activeDMPartnerUid) return;
+            const channelIdTokenKey = auth.currentUser.uid < activeDMPartnerUid ? `${auth.currentUser.uid}_${activeDMPartnerUid}` : `${activeDMPartnerUid}_${auth.currentUser.uid}`;
+            const typingRef = ref(db, `direct_messages_typing/${channelIdTokenKey}/${auth.currentUser.uid}`);
+            if(inputEl.value.trim().length > 0) {
+                await set(typingRef, true);
+            } else {
+                await remove(typingRef);
+            }
+        };
+
+        window.sendPrivateMessage = async () => {
+            const input = document.getElementById('dm-input');
+            const txt = input.value.trim();
+            if(!txt || !activeDMPartnerUid) return;
+
+            const channelIdTokenKey = auth.currentUser.uid < activeDMPartnerUid ? `${auth.currentUser.uid}_${activeDMPartnerUid}` : `${activeDMPartnerUid}_${auth.currentUser.uid}`;
+            const logPushEndpointRef = push(ref(db, `direct_messages/${channelIdTokenKey}`));
+
+            await set(logPushEndpointRef, {
+                type: 'text',
+                text: txt,
+                senderUid: auth.currentUser.uid,
+                senderName: currentUserProfile.displayName,
+                timestamp: Date.now()
+            });
+
+            input.value = '';
+            await remove(ref(db, `direct_messages_typing/${channelIdTokenKey}/${auth.currentUser.uid}`));
+        };
+
+        // --- Voice Messaging System inside Private Friends DMs ---
+        window.togglePrivateDmAudioRecordingSubsystem = async () => {
+            if (!activeDMPartnerUid) return showToast("Choose a dynamic connection conversation partner thread first.", "error");
+            const micBtnElement = document.getElementById('dm-mic-btn');
+            const channelIdTokenKey = auth.currentUser.uid < activeDMPartnerUid ? `${auth.currentUser.uid}_${activeDMPartnerUid}` : `${activeDMPartnerUid}_${auth.currentUser.uid}`;
+
+            if (dmMediaRecorderInstance && dmMediaRecorderInstance.state === "recording") {
+                dmMediaRecorderInstance.stop();
+                micBtnElement.classList.remove('btn-mic-active');
+                micBtnElement.innerHTML = `<i class="fas fa-microphone"></i>`;
+                return;
+            }
+
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                return showToast("Browser software architecture blocks mic captures pipelines.", "error");
+            }
+
+            try {
+                showToast("Requesting audio alignment permission access controls...", "success");
+                const captureStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                
+                dmAccumulatedAudioChunksBuffer = [];
+                dmMediaRecorderInstance = new MediaRecorder(captureStream);
+
+                dmMediaRecorderInstance.ondataavailable = (event) => {
+                    if (event.data && event.data.size > 0) {
+                        dmAccumulatedAudioChunksBuffer.push(event.data);
+                    }
+                };
+
+                dmMediaRecorderInstance.onstop = async () => {
+                    const compositeAudioBlob = new Blob(dmAccumulatedAudioChunksBuffer, { type: 'audio/webm' });
+                    const audioFileObject = new File([compositeAudioBlob], `dm_voice_${Date.now()}.webm`, { type: 'audio/webm' });
+
+                    captureStream.getTracks().forEach(track => track.stop());
+                    showToast("Uploading friend private voice message data structure...", "success");
+
+                    try {
+                        const directUrl = await uploadMediaToCloudinary(audioFileObject);
+                        const dmPushRef = push(ref(db, `direct_messages/${channelIdTokenKey}`));
+                        
+                        await set(dmPushRef, {
+                            type: 'audio',
+                            fileUrl: directUrl,
+                            senderUid: auth.currentUser.uid,
+                            senderName: currentUserProfile.displayName,
+                            timestamp: Date.now()
+                        });
+                        showToast("Voice message distributed.");
+                    } catch (err) {
+                        showToast(`Private audio stream data sync down block error: ${err.message}`, "error");
+                    }
+                };
+
+                dmMediaRecorderInstance.start();
+                micBtnElement.classList.add('btn-mic-active');
+                micBtnElement.innerHTML = `<i class="fas fa-stop"></i>`;
+                showToast("Recording direct private voice chat message...", "success");
+            } catch (err) {
+                showToast(`Hardware capture access authorization denied: ${err.message}`, "error");
+            }
+        };
+
+        // --- Invitation Link Parser Matrix Algorithms ---
+        window.copyInviteLink = () => {
+            if(!activeWorkspaceId) return;
+            const currentCdnUrlPathPrefix = window.location.href.split('?')[0];
+            const structuredDeepLinkUrl = `${currentCdnUrlPathPrefix}?joinWorkspaceCode=${workspaceMetadataCache[activeWorkspaceId]?.code}`;
+            
+            navigator.clipboard.writeText(structuredDeepLinkUrl);
+            showToast("Deep link string saved to system clipboard mapping buffer data arrays.");
+        };
+
+        window.showQrCodeModal = () => {
+            if(!activeWorkspaceId) return;
+            document.getElementById('qr-modal').classList.remove('hidden');
+            const targetElementNode = document.getElementById('qrcode-render-target');
+            targetElementNode.innerHTML = '';
+
+            const currentCdnUrlPathPrefix = window.location.href.split('?')[0];
+            const structuredDeepLinkUrl = `${currentCdnUrlPathPrefix}?joinWorkspaceCode=${workspaceMetadataCache[activeWorkspaceId]?.code}`;
+
+            new QRCode(targetElementNode, {
+                text: structuredDeepLinkUrl,
+                width: 180,
+                height: 180
+            });
+        };
+
+        window.openReportWorkspaceModal = () => {
+            if (!activeWorkspaceId) return showToast("No active workspace to report.", "error");
+            document.getElementById('report-ws-modal').classList.remove('hidden');
+        };
+
+        window.submitWorkspaceReportForm = async () => {
+            const reason = document.getElementById('report-ws-reason').value;
+            const details = document.getElementById('report-ws-details').value.trim();
+            const evidenceFile = document.getElementById('report-ws-file').files[0];
+
+            if (!details) return showToast("Please write details explaining your report context.", "error");
+
+            showToast("Packaging reporting file telemetry channels...", "success");
+            let fileEvidenceUrl = "";
+            if (evidenceFile) {
+                fileEvidenceUrl = await uploadMediaToCloudinary(evidenceFile);
+            }
+
+            const reportsRef = push(ref(db, 'workspace_reports'));
+            await set(reportsRef, {
+                workspaceId: activeWorkspaceId,
+                workspaceName: workspaceMetadataCache[activeWorkspaceId]?.name || "Unknown",
+                reporterUid: auth.currentUser.uid,
+                reporterName: currentUserProfile.displayName,
+                reasonCategory: reason,
+                textExplanation: details,
+                attachedEvidenceUrl: fileEvidenceUrl,
+                timestamp: Date.now()
+            });
+
+            document.getElementById('report-ws-details').value = '';
+            document.getElementById('report-ws-file').value = null;
+            closeModal('report-ws-modal');
+            showToast("Workspace reported successfully. Moderation queues updated.");
+        };
+
+        // --- Multi-Option Poll Interaction Processing Models Component Blocks ---
+        window.openFeedbackModalDialog = () => {
+            document.getElementById('feedback-description-box').value = '';
+            document.getElementById('feedback-range-slider').value = 2.5;
+            calculateFeedbackDynamicStates(2.5);
+            document.getElementById('feedback-modal').classList.remove('hidden');
+            toggleSidebar();
+        };
+
+        window.calculateFeedbackDynamicStates = (val) => {
+            const floatScore = parseFloat(val);
+            document.getElementById('feedback-score-rating').innerText = `Rating: ${floatScore.toFixed(1)} / 5.0`;
+            
+            const faceNode = document.getElementById('feedback-emoji-face');
+            const reactionNode = document.getElementById('feedback-text-reaction');
+            
+            faceNode.classList.remove('pop-animation');
+            void faceNode.offsetWidth; // Force CSS reflow restart trigger animation
+            faceNode.classList.add('pop-animation');
+
+            if(floatScore <= 1.0) {
+                faceNode.innerText = "😭";
+                reactionNode.innerText = "Critically baseline or broken workflow.";
+                reactionNode.style.color = "var(--error)";
+            } else if(floatScore <= 2.0) {
+                faceNode.innerText = "😞";
+                reactionNode.innerText = "Disappointing experience with multiple issues.";
+                reactionNode.style.color = "#f97316";
+            } else if(floatScore <= 3.0) {
+                faceNode.innerText = "😐";
+                reactionNode.innerText = "Mundane performance. Needs optimizations.";
+                reactionNode.style.color = "var(--warning)";
+            } else if(floatScore <= 4.0) {
+                faceNode.innerText = "🙂";
+                reactionNode.innerText = "Pleasant software. Stable environment layout mechanics.";
+                reactionNode.style.color = "#84cc16";
+            } else if(floatScore < 5.0) {
+                faceNode.innerText = "🥰";
+                reactionNode.innerText = "Outstanding stability structures and real-time response times!";
+                reactionNode.style.color = "var(--success)";
+            } else {
+                faceNode.innerText = "🤩";
+                reactionNode.innerText = "Absolute perfection! Flawless operational matrices.";
+                reactionNode.style.color = "#06b6d4";
+            }
+        };
+
+        window.submitSystemFeedbackReport = async () => {
+            const selectedScore = parseFloat(document.getElementById('feedback-range-slider').value);
+            const writtenReviewString = document.getElementById('feedback-description-box').value.trim();
+
+            if(!writtenReviewString) return showToast("Please write a small explanation review message first", "error");
+
+            const targetFeedbackEndpointRef = push(ref(db, 'feedbacks'));
+            const feedbackRecordPackage = {
+                uid: auth.currentUser?.uid || "Anonymous",
+                displayName: currentUserProfile?.displayName || "Guest Profile",
+                score: selectedScore,
+                comment: writtenReviewString,
+                timestamp: Date.now()
+            };
+
+            await set(targetFeedbackEndpointRef, feedbackRecordPackage);
+            closeModal('feedback-modal');
+            showToast("Thank you! Your fractional feedback review metrics have been recorded.");
+        };
+
+        function parseIncomingDeepLinks() {
+            const searchParametersMapObj = new URLSearchParams(window.location.search);
+            const capturedCodeParam = searchParametersMapObj.get('joinWorkspaceCode');
+            if(capturedCodeParam && capturedCodeParam.length === 6) {
+                // Buffer tracking state arrays parameters to apply checks post context evaluation loop bounds logic lines
+                setTimeout(() => {
+                    if(auth.currentUser && currentUserProfile) {
+                        document.getElementById('ws-join-code').value = capturedCodeParam;
+                        openJoinWorkspaceModal();
+                    }
+                }, 2500);
+            }
+        }
+
+        // --- Core UI Modals Window View Frames Management Layer ---
+        window.toggleSidebar = () => {
+            // Block structural drawer interactions when the visitor resides on authentication components layouts pages rooms fields
+            const currentActiveSectionId = document.querySelector('.dashboard:not(.hidden), .auth-container:not(.hidden)')?.id;
+            if (currentActiveSectionId === 'auth-section' || currentActiveSectionId === 'verify-section') {
+                return;
+            }
+            document.getElementById('sidebar').classList.toggle('active');
+            document.getElementById('sidebar-overlay').classList.toggle('active');
+        };
+
+        window.showSection = (id) => {
+            ['auth-section', 'verify-section', 'workspace-dashboard', 'friends-dashboard'].forEach(sec => {
+                document.getElementById(sec).classList.add('hidden');
+            });
+            document.getElementById(id).classList.remove('hidden');
+        };
+
+        window.openCreateWorkspaceModal = () => { document.getElementById('create-workspace-modal').classList.remove('hidden'); toggleSidebar(); };
+        window.openJoinWorkspaceModal = () => { document.getElementById('join-workspace-modal').classList.remove('hidden'); toggleSidebar(); };
+        window.openAddFriendsModal = () => { document.getElementById('add-friends-modal').classList.remove('hidden'); toggleSidebar(); };
+        window.closeModal = (id) => { document.getElementById(id).classList.add('hidden'); };
+
+        window.previewImage = (input, imgId) => {
+            const preview = document.getElementById(imgId);
+            const file = input.files[0];
+            if(file) {
+                const r = new FileReader();
+                r.onload = (e) => { preview.src = e.target.result; preview.style.display = 'block'; };
+                r.readAsDataURL(file);
+            }
+        };
+
+        window.showToast = (msg, type = 'success') => {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle';
+            toast.innerHTML = `<i class="fas ${icon}" style="color: var(--${type})"></i> <span>${msg}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        };
+
+        function showMentionAlertToastNotification(senderName, workspaceName) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast mention`;
+            toast.innerHTML = `<i class="fas fa-at" style="color:var(--warning)"></i> <span>You got mentioned by <strong>${senderName}</strong> in the workspace <strong>${workspaceName}</strong></span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 7000);
+        }
+
+        // --- Authentication Pipelines Engine Layer Modules Flow Implementation ---
+        window.toggleAuthMode = () => {
+            isLoginMode = !isLoginMode;
+            document.getElementById('auth-title').innerText = isLoginMode ? "Welcome Back" : "Create Account";
+            document.getElementById('auth-btn').innerText = isLoginMode ? "Sign In" : "Sign Up & Register";
+            document.getElementById('auth-toggle-text').innerText = isLoginMode ? "New to the app?" : "Already have an account?";
+            document.getElementById('auth-toggle-link').innerText = isLoginMode ? "Sign up now." : "Sign In";
+            document.getElementById('forgot-link').classList.toggle('hidden', !isLoginMode);
+        };
+
+        window.handleAuth = async () => {
+            const email = document.getElementById('email').value.trim();
+            const pass = document.getElementById('password').value.trim();
+            if(!email || !pass) return showToast("Please fill all tracking input credentials fields", "error");
+
+            try {
+                if(isLoginMode) {
+                    await signInWithEmailAndPassword(auth, email, pass);
+                    showToast("Login metrics verified.");
+                } else {
+                    const credentials = await createUserWithEmailAndPassword(auth, email, pass);
+                    await sendEmailVerification(credentials.user);
+                    showToast("Registration identity built. Verification email sent out channel workflows.");
+                    showSection('verify-section');
+                }
+            } catch (err) {
+                showToast(err.message, "error");
+            }
+        };
+
+        window.signInWithGoogle = async () => {
+            try {
+                await signInWithPopup(auth, googleProvider);
+                showToast("Authenticated via Google authorization node.");
+            } catch (err) {
+                showToast(err.message, "error");
+            }
+        };
+
+        window.handleForgotPassword = async () => {
+            const email = document.getElementById('email').value.trim();
+            if(!email) return showToast("Provide primary registration email first.", "error");
+            try {
+                await sendPasswordResetEmail(auth, email);
+                showToast("Password adjustment routing configuration link distributed.");
+            } catch(e) { showToast(e.message, "error"); }
+        };
+
+        window.logout = () => signOut(auth).then(() => window.location.reload());
+    </script>
 </body>
 </html>
