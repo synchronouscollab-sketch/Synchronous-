@@ -2426,6 +2426,11 @@
 
         window.logout = () => signOut(auth).then(() => window.location.reload());
     </script>
+    <script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("./service-worker.js");
+}
+</script>
 </body>
 </html>
  
